@@ -1,0 +1,344 @@
+{
+  "sponsors": [
+    {
+      "id": "grinness",
+      "name": "Grinness",
+      "original_inspiration": "Guinness",
+      "drink_type": "Irish Stout",
+      "theme_color": "#111",
+      "atari_palette_9bit": [
+        "000", "111", "222", "333", "443", "554", "760", "650",
+        "540", "321", "777", "fff", "123", "012", "000", "000"
+      ],
+      "modern_hex_palette": [
+        "#000000", "#242424", "#494949", "#6d6d6d", "#92926d", "#b6b692", "#fcda00", "#dbb600",
+        "#b69200", "#6d4924", "#fcfcfc", "#ffffff", "#24496d", "#002449", "#000000", "#000000"
+      ],
+      "flag": {
+        "primary_color": "#111",
+        "secondary_color": "#760",
+        "border_color": "#fff",
+        "logo_symbol": "lute",
+        "logo_description": "Asymmetrical wooden retro-lute replacing the harp"
+      },
+      "chiptune_anthem": {
+        "tempo_bpm": 105,
+        "ym2149_channels": {
+          "channel_A": [
+            {"note": "D4", "duration": 0.5},
+            {"note": "F4", "duration": 0.5},
+            {"note": "A4", "duration": 1.0},
+            {"note": "A4", "duration": 0.5},
+            {"note": "G4", "duration": 0.5},
+            {"note": "F4", "duration": 1.0},
+            {"note": "D4", "duration": 1.0}
+          ],
+          "channel_B": [
+            {"note": "D3", "duration": 1.0},
+            {"note": "F3", "duration": 1.0},
+            {"note": "C3", "duration": 1.0},
+            {"note": "D3", "duration": 1.0}
+          ],
+          "channel_C": [
+            {"note": "A3", "duration": 0.5},
+            {"note": "D4", "duration": 0.5},
+            {"note": "F4", "duration": 1.0},
+            {"note": "E4", "duration": 1.0},
+            {"note": "A3", "duration": 1.0}
+          ]
+        }
+      }
+    },
+    {
+      "id": "heineklon",
+      "name": "Heineklon",
+      "original_inspiration": "Heineken",
+      "drink_type": "Dutch Lager",
+      "theme_color": "#062",
+      "atari_palette_9bit": [
+        "000", "051", "072", "700", "fff", "777", "555", "333",
+        "222", "111", "031", "042", "722", "411", "020", "000"
+      ],
+      "modern_hex_palette": [
+        "#000000", "#00b624", "#00fc49", "#fc0000", "#ffffff", "#fcfcfc", "#b6b6b6", "#6d6d6d",
+        "#494949", "#242424", "#006d24", "#009249", "#fc4949", "#922424", "#004900", "#000000"
+      ],
+      "flag": {
+        "primary_color": "#051",
+        "secondary_color": "#fff",
+        "border_color": "#700",
+        "logo_symbol": "asterisk",
+        "logo_description": "Asymmetrical red 8-bit asterisk (*), legally replacing the red star"
+      },
+      "chiptune_anthem": {
+        "tempo_bpm": 120,
+        "ym2149_channels": {
+          "channel_A": [
+            {"note": "C4", "duration": 0.5},
+            {"note": "E4", "duration": 0.5},
+            {"note": "G4", "duration": 0.5},
+            {"note": "E4", "duration": 0.5},
+            {"note": "C5", "duration": 1.0},
+            {"note": "G4", "duration": 1.0}
+          ],
+          "channel_B": [
+            {"note": "C3", "duration": 1.0},
+            {"note": "G3", "duration": 1.0},
+            {"note": "E3", "duration": 1.0},
+            {"note": "C3", "duration": 1.0}
+          ],
+          "channel_C": [
+            {"note": "G3", "duration": 0.5},
+            {"note": "C4", "duration": 0.5},
+            {"note": "E4", "duration": 1.0},
+            {"note": "C4", "duration": 1.0},
+            {"note": "E3", "duration": 1.0}
+          ]
+        }
+      }
+    },
+    {
+      "id": "jaegerkleister",
+      "name": "Jägerkleister",
+      "original_inspiration": "Jägermeister",
+      "drink_type": "Kräuterlikör",
+      "theme_color": "#130",
+      "atari_palette_9bit": [
+        "000", "130", "240", "730", "750", "fff", "777", "555",
+        "221", "110", "351", "020", "620", "410", "120", "000"
+      ],
+      "modern_hex_palette": [
+        "#000000", "#246d00", "#499200", "#fc6d00", "#fcb600", "#ffffff", "#fcfcfc", "#b6b6b6",
+        "#494924", "#242400", "#6db624", "#004900", "#db4900", "#922400", "#244900", "#000000"
+      ],
+      "flag": {
+        "primary_color": "#130",
+        "secondary_color": "#730",
+        "border_color": "#fff",
+        "logo_symbol": "cross_eyed_elk",
+        "logo_description": "Derpy, cross-eyed pixel-art elk balancing a foaming beer mug in its antlers"
+      },
+      "chiptune_anthem": {
+        "tempo_bpm": 110,
+        "ym2149_channels": {
+          "channel_A": [
+            {"note": "G3", "duration": 0.5},
+            {"note": "C4", "duration": 0.5},
+            {"note": "E4", "duration": 0.5},
+            {"note": "G4", "duration": 1.5},
+            {"note": "F4", "duration": 0.5},
+            {"note": "E4", "duration": 0.5},
+            {"note": "D4", "duration": 1.0}
+          ],
+          "channel_B": [
+            {"note": "C3", "duration": 1.5},
+            {"note": "E3", "duration": 0.5},
+            {"note": "G3", "duration": 1.0},
+            {"note": "G2", "duration": 1.0}
+          ],
+          "channel_C": [
+            {"note": "E3", "duration": 1.0},
+            {"note": "G3", "duration": 1.0},
+            {"note": "C4", "duration": 1.0},
+            {"note": "B3", "duration": 1.0}
+          ]
+        }
+      }
+    },
+    {
+      "id": "mack_damions_no8",
+      "name": "Mack Damion's Old No. 8",
+      "original_inspiration": "Jack Daniel's",
+      "drink_type": "Tennessee Whiskey",
+      "theme_color": "#000",
+      "atari_palette_9bit": [
+        "000", "111", "222", "333", "fff", "777", "555", "444",
+        "654", "432", "321", "211", "765", "100", "000", "000"
+      ],
+      "modern_hex_palette": [
+        "#000000", "#242424", "#494949", "#6d6d6d", "#ffffff", "#fcfcfc", "#b6b6b6", "#929292",
+        "#dbb692", "#926d49", "#6d4924", "#492424", "#fcdb6d", "#240000", "#000000", "#000000"
+      ],
+      "flag": {
+        "primary_color": "#000",
+        "secondary_color": "#fff",
+        "border_color": "#444",
+        "logo_symbol": "oak_barrel",
+        "logo_description": "Rustic, hand-drawn pixel-art whiskey barrel with 'Old No. 8 Sour Mash' carving"
+      },
+      "chiptune_anthem": {
+        "tempo_bpm": 90,
+        "ym2149_channels": {
+          "channel_A": [
+            {"note": "A3", "duration": 0.5},
+            {"note": "C4", "duration": 0.5},
+            {"note": "D4", "duration": 0.5},
+            {"note": "D#4", "duration": 0.25},
+            {"note": "E4", "duration": 0.75},
+            {"note": "G4", "duration": 0.5},
+            {"note": "A4", "duration": 1.5}
+          ],
+          "channel_B": [
+            {"note": "A2", "duration": 1.0},
+            {"note": "E3", "duration": 1.0},
+            {"note": "G3", "duration": 1.0},
+            {"note": "A3", "duration": 1.0}
+          ],
+          "channel_C": [
+            {"note": "C3", "duration": 0.5},
+            {"note": "E3", "duration": 0.5},
+            {"note": "G3", "duration": 1.0},
+            {"note": "E3", "duration": 1.0},
+            {"note": "C3", "duration": 1.0}
+          ]
+        }
+      }
+    },
+    {
+      "id": "caronas_extra",
+      "name": "Caronas Extra",
+      "original_inspiration": "Corona Extra",
+      "drink_type": "Mexican Cerveza",
+      "theme_color": "#036",
+      "atari_palette_9bit": [
+        "000", "025", "047", "760", "750", "fff", "777", "070",
+        "257", "135", "773", "551", "660", "012", "000", "000"
+      ],
+      "modern_hex_palette": [
+        "#000000", "#0049b6", "#0092fc", "#fcda00", "#fcb600", "#ffffff", "#fcfcfc", "#00fc00",
+        "#4992fc", "#246db6", "#fcfcdb", "#b6b624", "#dbdb00", "#002449", "#000000", "#000000"
+      ],
+      "flag": {
+        "primary_color": "#047",
+        "secondary_color": "#760",
+        "border_color": "#fff",
+        "logo_symbol": "paper_crown",
+        "logo_description": "Wobbly paper birthday crown with a neon-lime pixel slice skewered on top"
+      },
+      "chiptune_anthem": {
+        "tempo_bpm": 130,
+        "ym2149_channels": {
+          "channel_A": [
+            {"note": "E4", "duration": 0.5},
+            {"note": "G#4", "duration": 0.5},
+            {"note": "B4", "duration": 0.5},
+            {"note": "E5", "duration": 1.0},
+            {"note": "D#5", "duration": 0.5},
+            {"note": "C#5", "duration": 1.0}
+          ],
+          "channel_B": [
+            {"note": "E3", "duration": 1.0},
+            {"note": "B3", "duration": 1.0},
+            {"note": "G#3", "duration": 1.0},
+            {"note": "E3", "duration": 1.0}
+          ],
+          "channel_C": [
+            {"note": "B3", "duration": 0.5},
+            {"note": "E4", "duration": 0.5},
+            {"note": "G#4", "duration": 1.0},
+            {"note": "E4", "duration": 1.0},
+            {"note": "B3", "duration": 1.0}
+          ]
+        }
+      }
+    },
+    {
+      "id": "budweicher",
+      "name": "Budweicher",
+      "original_inspiration": "Budweiser",
+      "drink_type": "American Light Lager",
+      "theme_color": "#700",
+      "atari_palette_9bit": [
+        "000", "700", "500", "fff", "007", "004", "777", "555",
+        "755", "533", "311", "100", "722", "211", "000", "000"
+      ],
+      "modern_hex_palette": [
+        "#000000", "#fc0000", "#b60000", "#ffffff", "#0000fc", "#000092", "#fcfcfc", "#b6b6b6",
+        "#fcb6b6", "#b66d6d", "#6d2424", "#240000", "#fc4949", "#492424", "#000000", "#000000"
+      ],
+      "flag": {
+        "primary_color": "#700",
+        "secondary_color": "#fff",
+        "border_color": "#007",
+        "logo_symbol": "drooping_bowtie",
+        "logo_description": "A cartoon bowtie drooping in the middle, engraved with an ear of barley"
+      },
+      "chiptune_anthem": {
+        "tempo_bpm": 125,
+        "ym2149_channels": {
+          "channel_A": [
+            {"note": "C4", "duration": 0.5},
+            {"note": "C4", "duration": 0.5},
+            {"note": "G4", "duration": 0.5},
+            {"note": "G4", "duration": 0.5},
+            {"note": "A4", "duration": 0.5},
+            {"note": "A4", "duration": 0.5},
+            {"note": "G4", "duration": 1.0}
+          ],
+          "channel_B": [
+            {"note": "C3", "duration": 1.0},
+            {"note": "E3", "duration": 1.0},
+            {"note": "F3", "duration": 1.0},
+            {"note": "C3", "duration": 1.0}
+          ],
+          "channel_C": [
+            {"note": "E3", "duration": 0.5},
+            {"note": "G3", "duration": 0.5},
+            {"note": "C4", "duration": 1.0},
+            {"note": "E4", "duration": 1.0},
+            {"note": "G4", "duration": 1.0}
+          ]
+        }
+      }
+    },
+    {
+      "id": "schmirnoffski",
+      "name": "Schmirnoffski",
+      "original_inspiration": "Smirnoff",
+      "drink_type": "Red Label Vodka",
+      "theme_color": "#500",
+      "atari_palette_9bit": [
+        "000", "700", "500", "777", "fff", "444", "333", "222",
+        "111", "733", "522", "666", "100", "000", "000", "000"
+      ],
+      "modern_hex_palette": [
+        "#000000", "#fc0000", "#b60000", "#fcfcfc", "#ffffff", "#929292", "#6d6d6d", "#494949",
+        "#242424", "#fc6d6d", "#b64949", "#dbdbdb", "#240000", "#000000", "#000000", "#000000"
+      ],
+      "flag": {
+        "primary_color": "#700",
+        "secondary_color": "#777",
+        "border_color": "#fff",
+        "logo_symbol": "triple_glass",
+        "logo_description": "Triple-distilled pixel-art shot glass with an ice block inside"
+      },
+      "chiptune_anthem": {
+        "tempo_bpm": 100,
+        "ym2149_channels": {
+          "channel_A": [
+            {"note": "A4", "duration": 0.5},
+            {"note": "B4", "duration": 0.5},
+            {"note": "C5", "duration": 1.0},
+            {"note": "B4", "duration": 0.5},
+            {"note": "A4", "duration": 0.5},
+            {"note": "G#4", "duration": 1.0},
+            {"note": "E4", "duration": 1.0}
+          ],
+          "channel_B": [
+            {"note": "A2", "duration": 1.0},
+            {"note": "C3", "duration": 1.0},
+            {"note": "E3", "duration": 1.0},
+            {"note": "E2", "duration": 1.0}
+          ],
+          "channel_C": [
+            {"note": "E3", "duration": 0.5},
+            {"note": "A3", "duration": 0.5},
+            {"note": "C4", "duration": 1.0},
+            {"note": "B3", "duration": 1.0},
+            {"note": "A3", "duration": 1.0}
+          ]
+        }
+      }
+    }
+  ]
+}
