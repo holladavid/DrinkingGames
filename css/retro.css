@@ -5,38 +5,46 @@
     user-select: none;
 }
 
-body {
-    background-color: #050505;
+html, body {
+    width: 100%;
+    height: 100%;
+    background-color: #000000;
     color: #00ff00;
     font-family: 'Courier New', Courier, monospace;
     display: flex;
     justify-content: center;
     align-items: center;
-    min-height: 100vh;
-    overflow: hidden;
+    overflow: hidden; /* Prevents scrollbars */
 }
 
 #game-container {
     position: relative;
-    border: 8px solid #222;
-    box-shadow: 0 0 30px rgba(0, 0, 0, 0.9);
-    background-color: #000;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #000000;
 }
 
-/* Crisp 8-Bit Pixel Rendering Scaling */
+/* Dynamically scales 320x200 Canvas to 100% of available browser viewport
+   while strictly locking the 16:10 (8:5) Atari ST Aspect Ratio */
 canvas#atari-canvas {
     display: block;
-    width: 640px;  /* 2x Scale from 320px */
-    height: 400px; /* 2x Scale from 200px */
+
+    /* Responsive Aspect-Ratio Scaling Formula */
+    width: 100vw;
+    height: calc(100vw * (10 / 16)); /* 0.625 ratio */
+    max-height: 100vh;
+    max-width: calc(100vh * (16 / 10)); /* 1.6 ratio */
+    aspect-ratio: 16 / 10;
+
+    /* High-DPI / Retina Razor Sharp Pixel Art Rendering */
     image-rendering: -moz-crisp-edges;
     image-rendering: -webkit-crisp-edges;
     image-rendering: pixelated;
     image-rendering: crisp-edges;
-}
 
-@media (max-width: 680px) {
-    canvas#atari-canvas {
-        width: 320px;
-        height: 200px;
-    }
+    /* Retro CRT Glow subtle shadow */
+    box-shadow: 0 0 50px rgba(0, 255, 0, 0.12);
 }
