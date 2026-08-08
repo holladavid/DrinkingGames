@@ -1,11 +1,12 @@
 /**
  * Summer Games Torch Lighting Parody ("Lighting of the Holy Keg")
- * Uses AssetLoader for retro backgrounds and sprite blitting.
+ * Uses AssetLoader for animated runner sprites, background, and looping intro music.
  */
 export default class IntroAnimation {
-    constructor(renderer, synth, assetLoader) {
+    constructor(renderer, synth, musicPlayer, assetLoader) {
         this.renderer = renderer;
         this.synth = synth;
+        this.musicPlayer = musicPlayer;
         this.assetLoader = assetLoader;
 
         this.isFinished = false;
@@ -14,7 +15,7 @@ export default class IntroAnimation {
         this.fanfarePlayed = false;
 
         this.runnerX = -30;
-        this.runnerY = 142;
+        this.runnerY = 132;
     }
 
     reset(introMusicAsset) {
@@ -25,8 +26,8 @@ export default class IntroAnimation {
         this.runnerY = 132;
         this.particles = [];
 
-        // Play preloaded Intro Track JSON Asset!
-        if (introMusicAsset) {
+        // Play preloaded Intro Track JSON Asset safely
+        if (this.musicPlayer && introMusicAsset) {
             this.musicPlayer.playTrack(introMusicAsset, 0.0);
         }
     }
@@ -34,19 +35,21 @@ export default class IntroAnimation {
     update(dt, input) {
         this.timer += dt;
 
+        // Skip or finish intro
         if (input.isJustPressed('START') || input.isJustPressed('BUTTON_A')) {
+            if (this.musicPlayer) this.musicPlayer.stop();
             this.isFinished = true;
             return;
         }
 
-        // Runner Movement
+        // Runner Movement logic
         if (this.timer < 4.0) {
             this.runnerX += dt * 55;
-            this.spawnFlameParticle(this.runnerX + 16, this.runnerY - 12);
+            this.spawnFlameParticle(this.runnerX + 18, this.runnerY - 4);
         } else if (this.timer < 6.0) {
             this.runnerX += dt * 20;
-            this.runnerY -= dt * 25;
-            this.spawnFlameParticle(this.runnerX + 16, this.runnerY - 12);
+            this.runnerY -= dt * 25; // Climb stairs
+            this.spawnFlameParticle(this.runnerX + 18, this.runnerY - 4);
         } else if (this.timer >= 6.0) {
             if (!this.fanfarePlayed) {
                 this.playOlympicFanfare();
@@ -55,7 +58,7 @@ export default class IntroAnimation {
             this.spawnKegFoamParticle(220, 80);
         }
 
-        // Update Particles
+        // Particle updates
         this.particles.forEach(p => {
             p.x += p.vx;
             p.y += p.vy;
@@ -64,6 +67,7 @@ export default class IntroAnimation {
         this.particles = this.particles.filter(p => p.life > 0);
 
         if (this.timer > 10.0) {
+            if (this.musicPlayer) this.musicPlayer.stop();
             this.isFinished = true;
         }
     }
@@ -89,7 +93,7 @@ export default class IntroAnimation {
     }
 
     playOlympicFanfare() {
-        this.synth.resume();
+        if (!this.synth || !this.synth.ctx) return;
         const now = this.synth.ctx.currentTime;
         this.synth.playTone(392, now, 0.2, 0.3);        // G4
         this.synth.playTone(523.25, now + 0.25, 0.2, 0.3); // C5
@@ -100,51 +104,51 @@ export default class IntroAnimation {
     render() {
         const ctx = this.renderer.ctx;
 
-        // 1. Draw Preloaded Pixel Art Stadium Background from AssetLoader!
-        const bgImg = this.assetLoader.get('stadium_bg');
+        // 1. Preloaded Stadium Background
+        const bgImg = this.assetLoader ? this.assetLoader.get('stadium_bg') : null;
         if (bgImg) {
             ctx.drawImage(bgImg, 0, 0);
         } else {
             this.renderer.clear('#020208');
         }
 
-        // 2. Draw Stairs to the Holy Keg
+        // 2. Stairs to the Holy Keg
         ctx.fillStyle = '#333344';
         for (let i = 0; i < 6; i++) {
             ctx.fillRect(160 + (i * 10), 142 - (i * 12), 60, 12);
         }
 
-        // 3. Draw Giant Holy Beer Keg (Cauldron)
+        // 3. Giant Holy Beer Keg (Cauldron)
         ctx.fillStyle = this.renderer.atari9BitToRgb([5, 3, 1]);
         ctx.fillRect(210, 72, 30, 25);
         ctx.fillStyle = this.renderer.atari9BitToRgb([7, 5, 0]);
         ctx.fillRect(208, 74, 34, 3);
         ctx.fillRect(208, 90, 34, 3);
 
-        // 4. Draw Flame & Foam Particles
+        // 4. Particles
         this.particles.forEach(p => {
             ctx.fillStyle = this.renderer.atari9BitToRgb(p.color);
             ctx.fillRect(Math.floor(p.x), Math.floor(p.y), 3, 3);
         });
 
-        // 5. Draw Runner
-        if (this.timer < 6.0) {
-            const legOffset = Math.sin(this.timer * 20) * 4;
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(Math.floor(this.runnerX), Math.floor(this.runnerY), 8, 14);
-            ctx.fillStyle = this.renderer.atari9BitToRgb([7, 5, 3]);
-            ctx.fillRect(Math.floor(this.runnerX + 1), Math.floor(this.runnerY - 6), 6, 6);
-            ctx.fillStyle = '#0000ff';
-            ctx.fillRect(Math.floor(this.runnerX + 1 + legOffset), Math.floor(this.runnerY + 14), 3, 6);
-            ctx.fillRect(Math.floor(this.runnerX + 4 - legOffset), Math.floor(this.runnerY + 14), 3, 6);
-
-            ctx.fillStyle = this.renderer.atari9BitToRgb([7, 5, 0]);
-            ctx.fillRect(Math.floor(this.runnerX + 10), Math.floor(this.runnerY - 8), 6, 8);
+        // 5. ANIMATED RUNNER SPRITE BLITTING FROM 'runner_sheet'
+        let frameIndex = 0;
+        if (this.timer < 4.0) {
+            frameIndex = Math.floor((this.timer * 8) % 4);
+        } else if (this.timer < 6.0) {
+            frameIndex = 4;
         } else {
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(195, 67, 8, 14);
-            ctx.fillStyle = this.renderer.atari9BitToRgb([7, 5, 3]);
-            ctx.fillRect(196, 61, 6, 6);
+            frameIndex = 5;
+        }
+
+        if (this.assetLoader) {
+            this.assetLoader.drawSprite(
+                ctx,
+                'runner_sheet',
+                frameIndex, 0,
+                24, 32,
+                this.runnerX, this.runnerY
+            );
         }
 
         // 6. Text Overlays

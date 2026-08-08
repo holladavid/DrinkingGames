@@ -13,39 +13,71 @@ import LobbyManager from '../ui/LobbyManager.js';
  */
 class App {
     constructor() {
+        this.version = "v1.0.0";
         this.renderer = new AtariRenderer('atari-canvas');
         this.input = new UnifiedInput();
         this.synth = new ChiptuneSynth();
         this.musicPlayer = new MusicPlayer(this.synth);
-        
-        // Initialize Asset Loader
         this.assetLoader = new AssetLoader();
 
         this.sponsors = [];
+        this.musicAssets = {};
         this.stateMachine = new StateMachine();
 
-        // Register BOOT State (Shows Atari ST Retro Loading Screen with Progress Bar)
+        // Boot & Loading State Variables
+        this.isLoaded = false;
+        this.blinkTimer = 0;
+
+        // Register BOOT State (Shows System Info, Revision Number, Progress & Keypress Prompt)
         this.stateMachine.registerState(STATES.BOOT, {
+            update: (dt, input) => {
+                this.blinkTimer += dt;
+
+                // Wait for explicit user input once loading hits 100%
+                if (this.isLoaded) {
+                    if (input.isJustPressed('START') || input.isJustPressed('BUTTON_A')) {
+                        this.synth.resume();
+                        this.synth.playConfirmSFX();
+                        this.stateMachine.transitionTo(STATES.INTRO);
+                    }
+                }
+            },
             render: () => {
                 this.renderer.clear('#000000');
                 const ctx = this.renderer.ctx;
 
+                // Header Title & Version Number
                 ctx.fillStyle = '#ffffff';
-                ctx.font = "bold 9px monospace";
-                ctx.fillText("ATARI ST SYSTEM LOADING...", 85, 80);
+                ctx.font = "bold 10px monospace";
+                ctx.fillText("ATARI ST DRINKING GAMES", 80, 48);
 
-                // Draw Retro Progress Bar Frame
+                ctx.fillStyle = this.renderer.atari9BitToRgb([7, 5, 0]); // Amber Gold
+                ctx.font = "8px monospace";
+                ctx.fillText(`SYSTEM REVISION ${this.version}`, 92, 65);
+
+                // Progress Bar Frame
                 ctx.strokeStyle = '#ffffff';
                 ctx.strokeRect(40, 95, 240, 16);
 
-                // Fill Green Atari Progress Bar
                 const progress = this.assetLoader.getProgress();
                 ctx.fillStyle = this.renderer.atari9BitToRgb([0, 7, 0]); // Emerald Green
                 ctx.fillRect(42, 97, Math.floor(236 * progress), 12);
 
-                ctx.fillStyle = '#888888';
-                ctx.font = "8px monospace";
-                ctx.fillText(`${Math.floor(progress * 100)}% COMPLETE`, 120, 125);
+                if (!this.isLoaded) {
+                    ctx.fillStyle = '#888888';
+                    ctx.font = "8px monospace";
+                    ctx.fillText(`LOADING ASSETS: ${Math.floor(progress * 100)}%`, 105, 128);
+                } else {
+                    // Blinking "PRESS START" Prompt once loaded
+                    if (Math.floor(this.blinkTimer * 3) % 2 === 0) {
+                        ctx.fillStyle = '#00ff00';
+                        ctx.font = "bold 9px monospace";
+                        ctx.fillText("PRESS SPACE / START TO BEGIN", 70, 138);
+                    }
+                    ctx.fillStyle = '#666666';
+                    ctx.font = "8px monospace";
+                    ctx.fillText("(C) 1988 GEMINI SOFT - ATARI ST", 75, 180);
+                }
             }
         });
 
@@ -56,7 +88,6 @@ class App {
         );
         this.loop.start();
 
-        // Load Assets & Data
         this.init();
     }
 
@@ -73,7 +104,7 @@ class App {
         await this.loadSponsorsData();
         await this.loadMusicAssets();
 
-        // Components
+        // Instantiate Component Managers
         this.intro = new IntroAnimation(this.renderer, this.synth, this.musicPlayer, this.assetLoader);
         this.lobby = new LobbyManager(this.renderer, this.synth, this.musicPlayer, this.sponsors);
 
@@ -89,29 +120,45 @@ class App {
             render: () => this.intro.render()
         });
 
-        // ... Rest der State Registrierungen ...
-        this.stateMachine.transitionTo(STATES.INTRO);
-    }
+        this.stateMachine.registerState(STATES.START_SCREEN, {
+            update: (dt, input) => {
+                if (input.isJustPressed('START')) {
+                    this.synth.playConfirmSFX();
+                    this.stateMachine.transitionTo(STATES.LOBBY);
+                }
+            },
+            render: () => this.renderStartScreen()
+        });
 
-    async loadMusicAssets() {
-        this.musicAssets = {};
-        try {
-            const res = await fetch('./data/music/intro_theme.json');
-            const data = await res.json();
-            this.musicAssets['intro_theme'] = data;
-            console.log(" Loaded Music Asset: intro_theme.json");
-        } catch (err) {
-            console.error("Failed to load music asset", err);
-        }
+        this.stateMachine.registerState(STATES.LOBBY, {
+            update: (dt, input) => this.lobby.update(input),
+            render: () => this.lobby.render()
+        });
+
+        // Assets & System Ready! Activate Press Start Prompt on BOOT Screen
+        this.isLoaded = true;
     }
 
     async loadSponsorsData() {
         try {
             const res = await fetch('./data/sponsors.json');
+            if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
             const data = await res.json();
             this.sponsors = data.sponsors;
         } catch (err) {
             console.error("Error loading sponsors.json", err);
+        }
+    }
+
+    async loadMusicAssets() {
+        try {
+            const res = await fetch('./data/music/intro_theme.json');
+            if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+            const data = await res.json();
+            this.musicAssets['intro_theme'] = data;
+            console.log(" Loaded Music Asset: intro_theme.json");
+        } catch (err) {
+            console.error("Error loading intro_theme.json", err);
         }
     }
 
