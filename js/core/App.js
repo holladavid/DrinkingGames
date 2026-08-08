@@ -3,6 +3,7 @@ import GameLoop from './GameLoop.js';
 import UnifiedInput from '../input/UnifiedInput.js';
 import ChiptuneSynth from '../audio/ChiptuneSynth.js';
 import MusicPlayer from '../audio/MusicPlayer.js';
+import AssetLoader from './AssetLoader.js';
 import StateMachine, { STATES } from './StateMachine.js';
 import IntroAnimation from '../ui/IntroAnimation.js';
 import LobbyManager from '../ui/LobbyManager.js';
@@ -16,18 +17,35 @@ class App {
         this.input = new UnifiedInput();
         this.synth = new ChiptuneSynth();
         this.musicPlayer = new MusicPlayer(this.synth);
+        
+        // Initialize Asset Loader
+        this.assetLoader = new AssetLoader();
 
         this.sponsors = [];
         this.stateMachine = new StateMachine();
 
-        // Register BOOT State (Shows instant retro loading screen)
+        // Register BOOT State (Shows Atari ST Retro Loading Screen with Progress Bar)
         this.stateMachine.registerState(STATES.BOOT, {
             render: () => {
                 this.renderer.clear('#000000');
                 const ctx = this.renderer.ctx;
-                ctx.fillStyle = '#00ff00';
+
+                ctx.fillStyle = '#ffffff';
+                ctx.font = "bold 9px monospace";
+                ctx.fillText("ATARI ST SYSTEM LOADING...", 85, 80);
+
+                // Draw Retro Progress Bar Frame
+                ctx.strokeStyle = '#ffffff';
+                ctx.strokeRect(40, 95, 240, 16);
+
+                // Fill Green Atari Progress Bar
+                const progress = this.assetLoader.getProgress();
+                ctx.fillStyle = this.renderer.atari9BitToRgb([0, 7, 0]); // Emerald Green
+                ctx.fillRect(42, 97, Math.floor(236 * progress), 12);
+
+                ctx.fillStyle = '#888888';
                 ctx.font = "8px monospace";
-                ctx.fillText("LOADING ATARI ST SYSTEM DATA...", 80, 100);
+                ctx.fillText(`${Math.floor(progress * 100)}% COMPLETE`, 120, 125);
             }
         });
 
@@ -38,18 +56,26 @@ class App {
         );
         this.loop.start();
 
-        // Initialize App & Load Data asynchronously
+        // Load Assets & Data
         this.init();
     }
 
     async init() {
+        // 1. Load Graphic Assets Manifest
+        await this.assetLoader.loadManifest({
+            'stadium_bg': 'assets/gfx/background/stadium_intro.png',
+            'podium_bg': 'assets/gfx/background/podium_scene.png',
+            'judges_sheet': 'assets/gfx/judges/judges_sheet.png'
+        });
+
+        // 2. Load Sponsors JSON Data
         await this.loadSponsorsData();
 
-        // Instantiate Component Managers
-        this.intro = new IntroAnimation(this.renderer, this.synth);
+        // Instantiate Components
+        this.intro = new IntroAnimation(this.renderer, this.synth, this.assetLoader);
         this.lobby = new LobbyManager(this.renderer, this.synth, this.musicPlayer, this.sponsors);
 
-        // Register State Machine Handlers
+        // Register States
         this.stateMachine.registerState(STATES.INTRO, {
             onEnter: () => this.intro.reset(),
             update: (dt, input) => {
@@ -76,27 +102,17 @@ class App {
             render: () => this.lobby.render()
         });
 
-        // Data ready -> Transition to INTRO
+        // Transition to INTRO
         this.stateMachine.transitionTo(STATES.INTRO);
     }
 
     async loadSponsorsData() {
         try {
             const res = await fetch('./data/sponsors.json');
-            if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
             const data = await res.json();
             this.sponsors = data.sponsors;
-            console.log(" Sponsors Loaded Successfully:", this.sponsors);
         } catch (err) {
-            console.error("Error loading sponsors.json, using fallback", err);
-            // Fallback default sponsor
-            this.sponsors = [{
-                id: "grinness",
-                name: "Grinness",
-                drink_type: "Irish Stout",
-                theme_color: "#111111",
-                flag: { primary_color: "#111", secondary_color: "#760", logo_symbol: "lute" }
-            }];
+            console.error("Error loading sponsors.json", err);
         }
     }
 
@@ -106,10 +122,7 @@ class App {
     }
 
     render() {
-        // 1. Let current active state draw onto offscreen buffer
         this.stateMachine.render();
-
-        // 2. CENTRALLY PRESENT OFFSCREEN BUFFER TO CANVAS + CRT SCANLINES
         this.renderer.present();
     }
 
