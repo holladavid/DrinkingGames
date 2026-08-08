@@ -1,5 +1,6 @@
 import AtariRenderer from '../render/AtariRenderer.js';
 import GameLoop from './GameLoop.js';
+import UnifiedInput from '../input/UnifiedInput.js';
 
 /**
  * Main Application Controller
@@ -9,8 +10,11 @@ class App {
         // Initialize Atari ST Hardware Renderer
         this.renderer = new AtariRenderer('atari-canvas');
         
-        // Frame Counter for Retro Animations
-        this.frameCounter = 0;
+        // Initialize Unified Input Controller
+        this.input = new UnifiedInput();
+
+        // Counter for triggers
+        this.confirmCount = 0;
 
         // Initialize Engine Game Loop
         this.loop = new GameLoop(
@@ -18,7 +22,7 @@ class App {
             () => this.render()
         );
 
-        console.log(" Atari ST Shifter Engine & Game Loop initialized successfully!");
+        console.log(" Atari ST Input System & Engine Ready!");
         this.loop.start();
     }
 
@@ -27,34 +31,58 @@ class App {
      * @param {number} dt - Delta time in seconds
      */
     update(dt) {
-        this.frameCounter++;
+        // 1. MUST UPDATE INPUT CONTROLLER EVERY FRAME
+        this.input.update();
+
+        // Test Edge-Detection (Just Pressed)
+        if (this.input.isJustPressed('START')) {
+            this.confirmCount++;
+        }
     }
 
     /**
      * Graphics Render Step
      */
     render() {
-        // 1. Clear offscreen frame buffer with dark background
+        // 1. Clear offscreen frame buffer
         this.renderer.clear('#050508');
 
-        // 2. Render Copperbars background raster interrupts
+        // 2. Render Copperbars background
         this.renderer.updateAndRenderCopperbars();
 
         // 3. Render Status Header Bar
         this.renderer.renderStatusHeader(
-            "DRINKING GAMES V1.0",
-            "SHIFTER: 320x200"
+            "INPUT TEST MODE",
+            "UNIFIED CONTROLLER"
         );
 
-        // 4. Center Title Demo Text
         const ctx = this.renderer.ctx;
-        ctx.fillStyle = "#ffffff";
-        ctx.font = "bold 10px 'Courier New', monospace";
-        ctx.fillText("ATARI ST ENGINE ACTIVE", 80, 95);
 
-        ctx.fillStyle = this.renderer.atari9BitToRgb([7, 5, 0]); // Amber
-        ctx.font = "8px 'Courier New', monospace";
-        ctx.fillText("PRESS ANY KEY TO START TURN", 75, 115);
+        // 4. Draw Input Status Indicators (Atari ST Style Boxes)
+        
+        // --- BUTTON A INDICATOR ---
+        ctx.fillStyle = this.input.isPressed('BUTTON_A') ? this.renderer.atari9BitToRgb([7, 0, 0]) : '#222222';
+        ctx.fillRect(30, 80, 70, 30);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = "8px monospace";
+        ctx.fillText("BUTTON A", 40, 98);
+
+        // --- BUTTON B INDICATOR ---
+        ctx.fillStyle = this.input.isPressed('BUTTON_B') ? this.renderer.atari9BitToRgb([0, 7, 0]) : '#222222';
+        ctx.fillRect(220, 80, 70, 30);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText("BUTTON B", 230, 98);
+
+        // --- START INDICATOR ---
+        ctx.fillStyle = this.input.isPressed('START') ? this.renderer.atari9BitToRgb([7, 5, 0]) : '#222222';
+        ctx.fillRect(110, 125, 100, 25);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText("START / CONFIRM", 118, 140);
+
+        // Counter Info Text
+        ctx.fillStyle = '#aaaaaa';
+        ctx.fillText(`START TRIGGER COUNT: ${this.confirmCount}`, 90, 175);
+        ctx.fillText("KEYS: A/D/Arrows/Space | TOUCH: Left/Right", 50, 190);
 
         // 5. Present frame to screen + CRT Scanline Shader
         this.renderer.present();
