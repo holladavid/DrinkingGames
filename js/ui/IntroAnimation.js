@@ -1,6 +1,6 @@
 /**
  * Summer Games Torch Lighting Parody ("Lighting of the Holy Keg")
- * Uses AssetLoader for animated runner sprites, background, and looping intro music.
+ * Attract Mode: Loops indefinitely with music & foam particles until SPACE / START is pressed.
  */
 export default class IntroAnimation {
     constructor(renderer, synth, musicPlayer, assetLoader) {
@@ -26,7 +26,7 @@ export default class IntroAnimation {
         this.runnerY = 132;
         this.particles = [];
 
-        // Play preloaded Intro Track JSON Asset safely
+        // Play preloaded Intro Track JSON Asset in continuous loop!
         if (this.musicPlayer && introMusicAsset) {
             this.musicPlayer.playTrack(introMusicAsset, 0.0);
         }
@@ -35,7 +35,7 @@ export default class IntroAnimation {
     update(dt, input) {
         this.timer += dt;
 
-        // Skip or finish intro
+        // Transition to next screen ONLY on explicit user keypress / START
         if (input.isJustPressed('START') || input.isJustPressed('BUTTON_A')) {
             if (this.musicPlayer) this.musicPlayer.stop();
             this.isFinished = true;
@@ -55,6 +55,7 @@ export default class IntroAnimation {
                 this.playOlympicFanfare();
                 this.fanfarePlayed = true;
             }
+            // Continuously spawn foam & firework particles indefinitely!
             this.spawnKegFoamParticle(220, 80);
         }
 
@@ -66,10 +67,7 @@ export default class IntroAnimation {
         });
         this.particles = this.particles.filter(p => p.life > 0);
 
-        if (this.timer > 10.0) {
-            if (this.musicPlayer) this.musicPlayer.stop();
-            this.isFinished = true;
-        }
+        // NO auto-finish timeout! Loops indefinitely until player presses START!
     }
 
     spawnFlameParticle(x, y) {
@@ -138,7 +136,7 @@ export default class IntroAnimation {
         } else if (this.timer < 6.0) {
             frameIndex = 4;
         } else {
-            frameIndex = 5;
+            frameIndex = 5; // Triumph stance
         }
 
         if (this.assetLoader) {
@@ -163,8 +161,11 @@ export default class IntroAnimation {
             ctx.fillText("DRINKING GAMES 1988", 95, 25);
         }
 
-        ctx.fillStyle = '#888888';
-        ctx.font = "8px monospace";
-        ctx.fillText("PRESS START TO SKIP INTRO", 85, 192);
+        // Blinking Prompt
+        if (Math.floor(this.timer * 3) % 2 === 0) {
+            ctx.fillStyle = '#00ff00';
+            ctx.font = "8px monospace";
+            ctx.fillText("PRESS SPACE / START TO CONTINUE", 75, 192);
+        }
     }
 }
