@@ -1,6 +1,6 @@
 /**
  * Summer Games Torch Lighting Parody ("Lighting of the Holy Keg")
- * Attract Mode: Loops indefinitely with music & foam particles until SPACE / START is pressed.
+ * Features Karaoke-style lyrics display synced to "Drunken Sailor" chiptune track asset.
  */
 export default class IntroAnimation {
     constructor(renderer, synth, musicPlayer, assetLoader) {
@@ -13,6 +13,7 @@ export default class IntroAnimation {
         this.timer = 0;
         this.particles = [];
         this.fanfarePlayed = false;
+        this.activeMusicAsset = null;
 
         this.runnerX = -30;
         this.runnerY = 132;
@@ -25,8 +26,8 @@ export default class IntroAnimation {
         this.runnerX = -30;
         this.runnerY = 132;
         this.particles = [];
+        this.activeMusicAsset = introMusicAsset;
 
-        // Play preloaded Intro Track JSON Asset in continuous loop!
         if (this.musicPlayer && introMusicAsset) {
             this.musicPlayer.playTrack(introMusicAsset, 0.0);
         }
@@ -35,7 +36,6 @@ export default class IntroAnimation {
     update(dt, input) {
         this.timer += dt;
 
-        // Transition to next screen ONLY on explicit user keypress / START
         if (input.isJustPressed('START') || input.isJustPressed('BUTTON_A')) {
             if (this.musicPlayer) this.musicPlayer.stop();
             this.isFinished = true;
@@ -48,26 +48,23 @@ export default class IntroAnimation {
             this.spawnFlameParticle(this.runnerX + 18, this.runnerY - 4);
         } else if (this.timer < 6.0) {
             this.runnerX += dt * 20;
-            this.runnerY -= dt * 25; // Climb stairs
+            this.runnerY -= dt * 25;
             this.spawnFlameParticle(this.runnerX + 18, this.runnerY - 4);
         } else if (this.timer >= 6.0) {
             if (!this.fanfarePlayed) {
                 this.playOlympicFanfare();
                 this.fanfarePlayed = true;
             }
-            // Continuously spawn foam & firework particles indefinitely!
             this.spawnKegFoamParticle(220, 80);
         }
 
-        // Particle updates
+        // Particles
         this.particles.forEach(p => {
             p.x += p.vx;
             p.y += p.vy;
             p.life -= dt;
         });
         this.particles = this.particles.filter(p => p.life > 0);
-
-        // NO auto-finish timeout! Loops indefinitely until player presses START!
     }
 
     spawnFlameParticle(x, y) {
@@ -110,13 +107,13 @@ export default class IntroAnimation {
             this.renderer.clear('#020208');
         }
 
-        // 2. Stairs to the Holy Keg
+        // 2. Stairs
         ctx.fillStyle = '#333344';
         for (let i = 0; i < 6; i++) {
             ctx.fillRect(160 + (i * 10), 142 - (i * 12), 60, 12);
         }
 
-        // 3. Giant Holy Beer Keg (Cauldron)
+        // 3. Giant Holy Keg
         ctx.fillStyle = this.renderer.atari9BitToRgb([5, 3, 1]);
         ctx.fillRect(210, 72, 30, 25);
         ctx.fillStyle = this.renderer.atari9BitToRgb([7, 5, 0]);
@@ -129,14 +126,14 @@ export default class IntroAnimation {
             ctx.fillRect(Math.floor(p.x), Math.floor(p.y), 3, 3);
         });
 
-        // 5. ANIMATED RUNNER SPRITE BLITTING FROM 'runner_sheet'
+        // 5. Runner Sprite
         let frameIndex = 0;
         if (this.timer < 4.0) {
             frameIndex = Math.floor((this.timer * 8) % 4);
         } else if (this.timer < 6.0) {
             frameIndex = 4;
         } else {
-            frameIndex = 5; // Triumph stance
+            frameIndex = 5;
         }
 
         if (this.assetLoader) {
@@ -149,23 +146,59 @@ export default class IntroAnimation {
             );
         }
 
-        // 6. Text Overlays
+        // 6. Title Text
         ctx.font = "bold 9px monospace";
         if (this.timer >= 6.0) {
             ctx.fillStyle = this.renderer.atari9BitToRgb([7, 5, 0]);
-            ctx.fillText("THE HOLY KEG IS LIT!", 95, 25);
-            ctx.fillStyle = '#ffffff';
-            ctx.fillText("LET THE GAMES BEGIN!", 90, 40);
+            ctx.fillText("THE HOLY KEG IS LIT!", 95, 20);
         } else {
             ctx.fillStyle = '#ffffff';
-            ctx.fillText("DRINKING GAMES 1988", 95, 25);
+            ctx.fillText("DRINKING GAMES 1988", 95, 20);
         }
 
-        // Blinking Prompt
+        // 7. KARAOKE LYRICS DISPLAY (Synced to Song Loop)
+        this.renderKaraokeBox(ctx);
+
+        // Footer Prompt
         if (Math.floor(this.timer * 3) % 2 === 0) {
             ctx.fillStyle = '#00ff00';
             ctx.font = "8px monospace";
             ctx.fillText("PRESS SPACE / START TO CONTINUE", 75, 192);
+        }
+    }
+
+    /**
+     * Renders synchronized 8-bit Karaoke Lyrics Overlay
+     */
+    renderKaraokeBox(ctx) {
+        if (!this.activeMusicAsset || !this.activeMusicAsset.lyrics) return;
+
+        // Loop time offset (24 seconds loop length for Drunken Sailor)
+        const loopTime = this.timer % 24.0;
+        const currentLyric = this.activeMusicAsset.lyrics.find(
+            l => loopTime >= l.start && loopTime < l.end
+        );
+
+        if (currentLyric) {
+            // Karaoke Banner Box
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.82)';
+            ctx.fillRect(10, 145, 300, 32);
+            ctx.strokeStyle = this.renderer.atari9BitToRgb([7, 5, 0]); // Gold Frame
+            ctx.strokeRect(10, 145, 300, 32);
+
+            // Karaoke Title Header
+            ctx.fillStyle = this.renderer.atari9BitToRgb([7, 5, 0]);
+            ctx.font = "7px monospace";
+            ctx.fillText("🎤 PUB SING-ALONG KARAOKE:", 15, 154);
+
+            // Active Karaoke Line 1
+            ctx.fillStyle = '#ffffff';
+            ctx.font = "bold 8px monospace";
+            ctx.fillText(currentLyric.line1, 15, 165);
+
+            // Active Karaoke Line 2 (Glowing Green)
+            ctx.fillStyle = '#00ff00';
+            ctx.fillText(currentLyric.line2, 15, 173);
         }
     }
 }
