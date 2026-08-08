@@ -1,0 +1,16 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# IDE / Editor Settings
+.vscode/*
+!.vscode/settings.json
+.idea/
+*.swp
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Build output
+dist/

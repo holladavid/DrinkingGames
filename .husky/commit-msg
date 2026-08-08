@@ -1,0 +1,13 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+commit_message="$(cat "$1")"
+pattern="^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([a-z0-9\-]+\))?: .+"
+
+if ! echo "$commit_message" | grep -iqE "$pattern"; then
+  echo "\n\033[31m[ERROR] Invalid commit message format!\033[0m"
+  echo "Expected format:"
+  echo "  \033[32mfeat(audio): implement native YM2149 synth\033[0m"
+  echo "  \033[32mfix(sponsors): correct 9-bit palette for Grinness\033[0m"
+  exit 1
+fi

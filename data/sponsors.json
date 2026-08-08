@@ -1,0 +1,34 @@
+{
+  "sponsors": [
+    {
+      "id": "grinness",
+      "name": "Grinness",
+      "drink_type": "Irish Stout",
+      "atari_palette_9bit": ["000", "111", "222", "333", "443", "554", "760", "650", "540", "321", "777", "fff", "123", "012", "000", "000"],
+      "flag": { "primary_color": "#111", "secondary_color": "#760", "logo_symbol": "lute" },
+      "anthem": [
+        {"note": "D4", "duration": 0.5}, {"note": "F4", "duration": 0.5}, {"note": "A4", "duration": 1.0}, {"note": "G4", "duration": 0.5}, {"note": "D4", "duration": 1.0}
+      ]
+    },
+    {
+      "id": "heineklon",
+      "name": "Heineklon",
+      "drink_type": "Dutch Lager",
+      "atari_palette_9bit": ["000", "051", "072", "700", "fff", "777", "555", "333", "222", "111", "031", "042", "722", "411", "020", "000"],
+      "flag": { "primary_color": "#051", "secondary_color": "#fff", "logo_symbol": "asterisk" },
+      "anthem": [
+        {"note": "C4", "duration": 0.5}, {"note": "E4", "duration": 0.5}, {"note": "G4", "duration": 0.5}, {"note": "C5", "duration": 1.0}
+      ]
+    },
+    {
+      "id": "jaegerkleister",
+      "name": "Jägerkleister",
+      "drink_type": "Kräuterlikör",
+      "atari_palette_9bit": ["000", "130", "240", "730", "750", "fff", "777", "555", "221", "110", "351", "020", "620", "410", "120", "000"],
+      "flag": { "primary_color": "#130", "secondary_color": "#730", "logo_symbol": "cross_eyed_elk" },
+      "anthem": [
+        {"note": "G3", "duration": 0.5}, {"note": "C4", "duration": 0.5}, {"note": "E4", "duration": 0.5}, {"note": "G4", "duration": 1.5}
+      ]
+    }
+  ]
+}

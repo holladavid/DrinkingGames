@@ -1,0 +1,42 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    user-select: none;
+}
+
+body {
+    background-color: #050505;
+    color: #00ff00;
+    font-family: 'Courier New', Courier, monospace;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    overflow: hidden;
+}
+
+#game-container {
+    position: relative;
+    border: 8px solid #222;
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.9);
+    background-color: #000;
+}
+
+/* Crisp 8-Bit Pixel Rendering Scaling */
+canvas#atari-canvas {
+    display: block;
+    width: 640px;  /* 2x Scale from 320px */
+    height: 400px; /* 2x Scale from 200px */
+    image-rendering: -moz-crisp-edges;
+    image-rendering: -webkit-crisp-edges;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+}
+
+@media (max-width: 680px) {
+    canvas#atari-canvas {
+        width: 320px;
+        height: 200px;
+    }
+}

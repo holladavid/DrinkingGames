@@ -1,0 +1,2392 @@
+--- PATH: README.md ---
+# Drinking Games: Retro-Partyturnier (Atari ST Style)
+
+> **GitHub Description:**
+> Retro-Trinkspiel im Atari ST-Stil! Ein rundenbasiertes Partyhit für bis zu 8 Spieler. Basiert auf einer modular erweiterbaren State-Machine mit chiptune-synthetisierten Sponsoren-Hymnen und 3 animierten Pixel-Art-Schiedsrichtern. Universelle Steuerung (Touch/Gamepad/Tasten). Das ultimative Pass-and-Play-Turnier!
+
+Dieses Repository enthält den Quellcode und die vollständige technische Spezifikation für unsere rundenbasierte WebApp im authentischen 16-Farben-Look des Atari ST. Das Spiel bringt den kompetitiven Geist von Klassikern wie *Summer Games* und *World Games* auf moderne Bildschirme – gepaart mit einer humorvollen Trinkspiel-Mechanik.
+
+---
+
+## 🚀 Key Features
+
+*   **Atari ST Hardware-Simulation:** Echter 8-Bit-Look (320x200 Pixel) mit 16-Farben-Paletten, simulierten zeilenweisen Raster-Interrupts (Scanline Color-Splits) und flackerfreiem Double-Buffering im Pillarbox-Format.
+*   **WebAudio Chiptune-Engine:** Dynamische Wiedergabe von Amiga-MOD- und XM-Hymnen direkt im Browser. Inklusive Echtzeit-Pitch- und Speed-Verzerrung (**"Lall-Effekt"**), basierend auf dem Promillewert des Gewinner-Charakters bei der Siegerehrung.
+*   **"Easy to Learn, Hard to Master"-Disziplinen:** Komplexe und herausfordernde Spielphysik (Siphon-Sprinting, Krug-Balance, Kronkorken-Flugbahnen mit Pfützen-Kollision, betrunkenes Input-Lag) gesteuert über nur zwei Tasten.
+*   **Drei Schiedsrichter (2 Frauen, 1 Mann):** Vollständig animierte Pixel-Art-Richter (Clara, Dieter, Svetlana) mit dynamischen, emotionalen Reaktionen und individueller Punktegewichtung (0.0 bis 10.0).
+*   **Unified Input Controller:** Nahtlose Steuerung über Tastatur (WASD/Pfeiltasten), geteilten Touchscreen (Links/Rechts-Daumensteuerung für Mobilgeräte) und Gamepads (HTML5 Gamepad API).
+
+---
+
+## 📂 Repository-Struktur & Dokumentation
+
+Unsere Software-Architektur ist streng modular aufgebaut. Vor dem Start der Programmierung haben wir das System in fünf detaillierte Teildokumente zerlegt. Diese dienen als direktes Lastenheft:
+
+*   **[`docs/drinking-games-architecture.md`](./drinking-games-architecture.md):** Die Haupt-Systemarchitektur. Beschreibt das rundenbasierte **State-Machine-Konzept** (Zustandssteuerung), die Dateistruktur und die Emulation der Atari ST-Shifter-Hardware auf dem HTML5 Canvas.
+*   **[`docs/drinking-games-disciplines.md`](./drinking-games-disciplines.md):** Detaillierte Spezifikation der 4 Hauptdisziplinen (*Trichter-Exen*, *Masskrug-Stemmen*, *Kronkorken-Flippen*, *Schlangenlinien-Lauf*), deren Interfaces (`IDiscipline`) und physikalischen Formeln.
+*   **[`docs/drinking-games-sponsors-audio.md`](./drinking-games-sponsors-audio.md):** JSON-Schema der Sponsorendeklaration (`sponsors.json`), die WebAudio-Synthesizer-Pipeline und die mathematische Umsetzung des akustischen Lall-Effekts.
+*   **[`docs/drinking-games-judges.md`](./drinking-games-judges.md):** Spezifikation der 3 Richter (Clara, Dieter, Svetlana), deren Punktegewichtungsmatrix sowie die Frame-by-Frame-Animationsphasen für euphorischen Jubel, Applaus und eiskalten Protest.
+*   **[`docs/drinking-games-ui-lobby.md`](./drinking-games-ui-lobby.md):** Design-Spezifikation für den Start-Bildschirm (inkl. animierter *Copperbars*-Hintergrundeffekte), die Pass-and-Play-Registrierungslobby (bis zu 8 Spieler) und den vollständigen Code des `UnifiedInputController`.
+
+---
+
+## 🛠️ Technologie-Stack
+
+*   **Frontend:** HTML5 Canvas, Vanilla ES6 JavaScript (No-Build-Pipeline für maximale Portabilität).
+*   **Audio:** WebAudio API (Chiptune-Synthese und Tracker-Player).
+*   **Eingabe:** HTML5 Gamepad API, Touch Event-Listener, Standard Keyboard Events.
+*   **IDE-Empfehlung:** Visual Studio Code (mit *Live Server* Extension für direktes Testing im Browser).
+
+---
+
+## 🏁 Schnellstart (Lokale Entwicklung)
+
+1.  Klone dieses Repository:
+    ```bash
+    git clone https://github.com/dein-username/drinking-games.git
+    cd drinking-games
+    ```
+2.  Öffne den Ordner in VS Code:
+    ```bash
+    code .
+    ```
+3.  Starte die Extension **Live Server** in VS Code, um die `index.html` lokal zu hosten.
+4.  Öffne `http://127.0.0.1:5500` in deinem Browser (Chrome, Firefox oder Safari) und starte das Turnier!
+
+---
+
+## 📝 Lizenz
+
+Dieses Projekt ist unter den Bedingungen eurer vereinbarten Team-Richtlinien lizenziert. Bitte beachtet beim Hinzufügen neuer Drink-Sponsoren die markenrechtlichen Bestimmungen.
+
+---
+*Created by Gemini Notebook. Inspired by the golden era of 16-bit home computers.*
+
+--- PATH: doc/drinking-games-architecture.md ---
+# Drinking Games - Main Software Architecture Specification (Version 3)
+## Master Developer Document for Atari ST-Style WebApp Implementation
+
+This document serves as the **Master Software Architecture Specification** for the retro-inspired, turn-based party game *Drinking Games* [cite: 39, 42]. This design takes direct technical inspiration from the legendary Atari ST home computer and its classic gaming catalogue, particularly Epyx's *Summer Games* and *World Games* [cite: 36, 1421].
+
+---
+
+## 1. System Architecture Overview
+
+The system uses a highly modular **Three-Tier Architecture** implemented entirely in client-side JavaScript (ES6 Modules) to allow file-less operation in VS Code and direct execution in any modern web browser.
+
+```
+       +-------------------------------------------------------+
+       |                  PRESENTATION LAYER                   |
+       |  - HTML5 Canvas Renderer (Atari ST Shifter Emulator) |
+       |  - Web Audio API Chiptune Engine (YM2149 Emulation)   |
+       +----------------------------+--------------------------+
+                                    |
+                                    v
+       +-------------------------------------------------------+
+       |                      LOGIC LAYER                      |
+       |  - Tournament State Machine (BOOT -> LOBBY -> PLAY)   |
+       |  - Unified Input Controller (Gamepad, Keyboard, Touch)|
+       |  - Modular Discipline Loader (Strategy Pattern)       |
+       +----------------------------+--------------------------+
+                                    |
+                                    v
+       +-------------------------------------------------------+
+       |                      DATA LAYER                       |
+       |  - sponsors-parody.json (Trademark-Safe Configurations)|
+       |  - GameState / Leaderboard Store (In-Memory / Local)  |
+       +-------------------------------------------------------+
+```
+
+### Querverweise auf Detail-Spezifikationen
+*   **Marken & Sound:** Siehe [drinking-games-sponsors-audio-v3.md](drinking-games-sponsors-audio-v3.md) für Detailangaben zu Sponsorendaten und der Audio-Engine.
+*   **Disziplinen:** Siehe [drinking-games-disciplines.md](drinking-games-disciplines.md) für exakte Gameplay-Mechaniken der Mini-Spiele.
+*   **Schiedsrichter:** Siehe [drinking-games-judges.md](drinking-games-judges.md) für Details zur Punkteberechnung und den Richter-Animationen.
+*   **Bedienung & UI:** Siehe [drinking-games-ui-lobby.md](drinking-games-ui-lobby.md) für den Unified Input Controller (Gamepad, Touch, Tasten) und die Lobby.
+*   **Code-Richtlinien:** Siehe [drinking-games-programming-conventions-v2.md](drinking-games-programming-conventions-v2.md) für Coding-Conventions und Git Conventional Commit-Regeln.
+
+---
+
+## 2. Legally Safe Parody System (Verballhornungen)
+
+To guarantee that the game does **not violate any copyrights or trademarks** of famous drink producers, all in-game sponsors are designed as parodies (Verballhornungen) [cite: 14]. This design successfully communicates the brand's aesthetic (through exact colors and beverage types) while protecting the project legally:
+
+1.  **Strict Name Distortion:** Names are altered into humorous, phonetically close parodies (e.g., *Guinness* $\rightarrow$ **Grinness**, *Heineken* $\rightarrow$ **Heineklon**, *Jägermeister* $\rightarrow$ **Jägerkleister**, *Jack Daniel's* $\rightarrow$ **Mack Damion's**, *Corona* $\rightarrow$ **Caronas**, *Budweiser* $\rightarrow$ **Budweicher**, *Smirnoff* $\rightarrow$ **Schmirnoffski**).
+2.  **Logo Redesign:** Any trademarked logo symbols are replaced by legally distinct parodies (e.g., replacing the Irish Celtic Harp with a wooden Lute, replacing the Jägermeister holy cross with a foaming beer mug held by a cross-eyed moose) [cite: 14].
+3.  **Modified Flags:** Flag color configurations and geometric splits are altered to avoid copying official corporate flags while maintaining the iconic color association.
+
+All brand parameters are decoupled into the external configuration file `sponsors-parody.json` (as described in the Sponsors & Audio Specification).
+
+---
+
+## 3. Emulated Atari ST Video Hardware (Shifter)
+
+The game graphics are rendered to a single HTML5 `<canvas>` element. Rather than using modern high-resolution techniques, the rendering engine software-emulates the limitations of the **Atari ST Shifter video chip** [cite: 1457]:
+
+### A. Resolution Splits & Display Modes
+*   **Active Disciplines:** Rendered in **Atari Low-Res Mode (320x200 pixels)**. This mode allows up to 16 simultaneous colors from the global 512-color hardware palette [cite: 1457].
+*   **UI, Menus & Tables:** Rendered in **Atari Medium-Res Mode (640x200 pixels)**. This mode limits the display to 4 simultaneous colors, ensuring extremely crisp and readable pixel-art text [cite: 1457, 1460].
+
+### B. Hardware Raster-Interrupt Emulation (Palette-Splits)
+To break the 16-color barrier on a single screen without introducing graphical artifacts, the renderer simulates horizontal scanline raster interrupts [cite: 1457, 1458]:
+1.  During each frame's redraw loop, the `CanvasRenderingContext2D` pixel buffer (`ImageData`) is compiled row-by-row.
+2.  For each individual vertical row (Y-coordinate), the active 16-color lookup table is dynamically swapped (palette-splitting) [cite: 1459, 1460].
+3.  This allows smooth color gradients (e.g., copperbars in the background or smooth liquid fills in beer mugs) while strictly keeping only 16 colors active per row [cite: 1459, 1460].
+
+### C. Pillarbox Flicker-Masking
+On physical Atari hardware, shifting palette colors in the middle of a scanline causes a visible flicker [cite: 1461].
+*   The game emulates this by rendering in a **4:3 aspect-ratio box (Pillarbox)** inside the modern browser window, leaving black side borders [cite: 1461].
+*   The virtual electron beam performs the color palette change inside the black border area *before* reaching the active 320px image viewport [cite: 1461].
+*   By setting the first color register of every scanline palette to `#000` (black), the hardware color transition remains completely invisible to the player [cite: 1461].
+
+---
+
+## 4. WebAudio YM2149 Chiptune Sound Synthesis
+
+The game completely avoids external audio files. Instead, it utilizes the browser's native **Web Audio API** to emulate the physical sound registers of the **Yamaha YM2149 sound chip** (used in the Atari ST) [cite: 26, 39, 1457].
+
+### A. Hardware Synthesizer Simulation
+*   **3 Square Wave Channels:** Implemented via parallel WebAudio `OscillatorNode` instances with `type = "square"` to generate the warm, metallic 8-bit sound [cite: 39, 1431].
+*   **Noise Generator:** Synthesized using an audio buffer filled with randomized pseudo-noise to emulate physical drum clicks and beverage fizzing effects [cite: 39].
+*   **4-bit Volume DAC Emulation:** A custom digital-to-analog converter is simulated in a WebAudio processor node, limiting gain output to 16 discrete volume steps and a retro 12.5 kHz sampling rate to introduce authentic aliasing and hiss [cite: 39].
+
+### B. Drunken Anthem Engine ("Lall-Effekt")
+During the medal ceremony, the player's customized national chiptune anthem is synthesized [cite: 349]. If the winning player's character has a high **Promillewert (BAC)**, two real-time audio distortions are introduced to simulate a drunken performance [cite: 349]:
+1.  **Pitch Bending (LFO Frequency Drift):** A slow, asymmetric LFO modulates the oscillators' frequencies, creating an amusingly out-of-tune, slurring tone [cite: 349].
+2.  **Speed Bending (Tempo Stumbling):** The scheduler's clock interval is dynamically stretched and slightly randomized, creating a performance that stumbles, hesitates, and drags behind the beat.
+
+--- PATH: doc/drinking-games-asset-workflow.md ---
+# Asset-Workflow & KI-Pixel-Art-Spezifikation
+## für das Atari ST-inspirierte Trinkspiel-Turnier
+
+Dieses Dokument definiert den standardisierten Workflow für die Erstellung, Vorbereitung, Strukturierung und Einbindung von grafischen Assets in unsere WebApp. Es dient als verbindlicher Leitfaden für Designer, Entwickler und Prompt-Engineers, um den authentischen Charme der späten 1980er Jahre (Atari ST Shifter-Eigenschaften) mit modernen Web-Technologien und KI-Generierungstools zu vereinen.
+
+---
+
+## 1. Verzeichnis- und Ablagestruktur
+
+Um eine saubere Trennung zwischen Logik-Code und Grafikdaten zu gewährleisten, werden alle Bild- und Musik-Assets in einem dedizierten `assets/`-Verzeichnis im Root-Ordner der WebApp abgelegt.
+
+```
+/project-root/
+├── index.html                     # Hauptseite mit Canvas-Viewport
+├── js/
+│   ├── main.js                    # Game Loop & State Machine
+│   ├── input.js                   # Unified Input Controller
+│   ├── audio.js                   # Prozedurale YM2149 Synthesizer-Engine
+│   └── renderer.js                # Atari ST Canvas-Renderer & CRT-Shader
+├── data/
+│   └── sponsors.json              # Datenbasierte Sponsor-Paletten und Melodien
+└── assets/
+    ├── gfx/
+    │   ├── backgrounds/
+    │   │   ├── intro_title.png    # Startbildschirm (320x200, Raster-Palette)
+    │   │   └── podium_scene.png   # Siegerehrungs-Hintergrund (320x200)
+    │   └── sprites/
+    │       ├── judges.png         # Spritesheet der 3 Schiedsrichter (Clara, Dieter, Svetlana)
+    │       ├── athletes.png       # Animations-Frames der Athleten-Sprites
+    │       └── ui_symbols.png     # Parodierte Sponsoren-Flaggen (48x24), Icons und Fonts
+```
+
+---
+
+## 2. Das Spritesheet-Konzept (Performance & Retro-Blitting)
+
+Im klassischen Spieldesign werden einzelne Animationsphasen (Frames) niemals als separate Dateien geladen. Stattdessen nutzen wir **Spritesheets** (Sammelgrafiken), die alle Bewegungsabläufe eines Charakters oder Objekts in einem festeren Pixel-Raster (Grid) bündeln.
+
+### Vorteile von Spritesheets
+1. **Reduktion von HTTP-Anfragen:** Es muss nur ein einziges Bild geladen werden, was Ladezeiten minimiert und asynchrone Grafikfehler verhindert.
+2. **Speichereffizienz:** Browser können eine große Textur wesentlich performanter im Grafikspeicher (VRAM) vorhalten als Hunderte winziger Einzelbilder.
+3. **Synchronisiertes Zeichnen:** Der Renderer schneidet präzise den benötigten Frame aus dem Sheet aus.
+
+### Technisches Rendering im HTML5 Canvas
+
+Mithilfe der 9-Parameter-Überladung der Canvas-Methode `drawImage()` schneiden wir das gewünschte Sprite in Echtzeit aus dem geladenen Spritesheet aus:
+
+$$\text{context.drawImage}(image, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight)$$
+
+* **$s$-Parameter (Source):** Position und Dimension des Frames innerhalb des Spritesheets.
+* **$d$-Parameter (Destination):** Position und Dimension des gerenderten Pixels auf dem Bildschirm.
+
+#### Code-Beispiel: Der Sprite-Blitter
+
+```javascript
+class RetroSprite {
+    constructor(imagePath, frameWidth, frameHeight) {
+        this.img = new Image();
+        this.img.src = imagePath;
+        this.frameWidth = frameWidth;
+        this.frameHeight = frameHeight;
+        this.isLoaded = false;
+        this.img.onload = () => { this.isLoaded = true; };
+    }
+
+    /**
+     * Zeichnet einen spezifischen Frame aus dem Spritesheet.
+     * @param {CanvasRenderingContext2D} ctx - Der Rendering-Context
+     * @param {number} frameX - Spalten-Index im Sheet (0-basiert)
+     * @param {number} frameY - Zeilen-Index im Sheet (0-basiert)
+     * @param {number} destX - X-Koordinate auf dem Canvas
+     * @param {number} destY - Y-Koordinate auf dem Canvas
+     */
+    drawFrame(ctx, frameX, frameY, destX, destY) {
+        if (!this.isLoaded) return;
+
+        ctx.drawImage(
+            this.img,
+            frameX * this.frameWidth,  // Start-X im Spritesheet
+            frameY * this.frameHeight, // Start-Y im Spritesheet
+            this.frameWidth,           // Breite des Ausschnitts
+            this.frameHeight,          // Höhe des Ausschnitts
+            Math.floor(destX),         // Ziel-X (Integer-Verrundung verhindert Subpixel-Unschärfe)
+            Math.floor(destY),         // Ziel-Y
+            this.frameWidth,           // Ziel-Breite (1:1 Skalierung)
+            this.frameHeight           // Ziel-Höhe (1:1 Skalierung)
+        );
+    }
+}
+```
+
+---
+
+## 3. KI-gestützter Pixel-Art-Workflow
+
+Moderne generative KIs (z. B. Midjourney, Stable Diffusion, DALL-E) können atemberaubende Konzeptzeichnungen im Pixel-Art-Look erstellen. Allerdings erzeugen sie standardmäßig hochauflösende "Bilder von Pixel-Art" mit weichen Übergängen, Subpixel-Artefakten und Tausenden von Mischfarben. 
+
+Um daraus echte, Atari-kompatible Assets zu machen, muss ein **vierstufiger Post-Processing-Workflow** eingehalten werden.
+
+```
+[ 1. KI-Generierung ] ──> [ 2. Downscaling ] ──> [ 3. Quantisierung ] ──> [ 4. Clean-Up ]
+  (Spezifische Prompts)     (Nearest Neighbor)      (Farb-Reduktion 16)      (Aseprite-Pixeling)
+```
+
+### Schritt 1: Generierung & Prompt-Engineering
+KIs müssen durch exakt definierte Constraints gezwungen werden, klare Kontraste und einfache Hintergründe auszugeben. 
+
+* **Hintergrund-Constraint:** Immer einen flachen, einfarbigen Hintergrund (z. B. `solid black background` oder `solid chroma-key green`) erzwingen. Das erleichtert das Freistellen und das Setzen von Index-0-Transparenzen massiv.
+* **Stil-Vorgaben:** Nutze Schlüsselbegriffe wie `8-bit`, `16-bit`, `Atari ST style`, `limited color palette` und `spritesheet grid`.
+
+#### Optimierte Prompt-Vorlagen:
+
+*   **Für Charaktere & Animationen:**
+    > `/imagine prompt: Pixel art spritesheet of a brawny Bavarian referee holding a beer stein, clapping and cheering, Atari ST 16-color palette style, side profile view, multiple sequential animation frames, clean grid arrangement, solid black background, crisp details, no dither --v 6.0`
+*   **Für Spielhintergründe (Stadium / Kneipe):**
+    > `/imagine prompt: 8-bit retro pixel art background, a crowded German beer tent with cheering spectator silhouettes, low-resolution Atari ST style, limited 16-color palette, 320x200 resolution aspect ratio, flat color blocks, sharp pixel edges --ar 16:10`
+
+---
+
+### Schritt 2: Downscaling (Schrumpfen)
+Das von der KI ausgegebene Bild (meist $1024 \times 1024$ Pixel) muss auf die winzige Zielauflösung der WebApp herunterskaliert werden (z. B. $32 \times 48$ Pixel für ein Charakter-Sprite).
+
+* **Das Gesetz der Skalierung:** Beim Herunterskalieren in Editoren wie **Aseprite** oder **Photoshop** muss zwingend die Skalierungsmethode **"Nächster Nachbar" (Nearest Neighbor)** gewählt werden!
+* **Warum?** Jede andere Methode (wie *Bilinear* oder *Bikubisch*) versucht, die Pixel weichzuzeichnen, was zu verwaschenen Kanten und unzähligen Mischfarben führt. "Nearest Neighbor" behält die harten, mathematisch exakten Pixelkanten bei.
+
+---
+
+### Schritt 3: Farbquantisierung (Atari-Farbkonformität)
+Der Atari ST Shifter kann im Low-Res-Modus maximal 16 Farben gleichzeitig darstellen. Die KI-Generierung verwendet jedoch auch nach dem Downscaling noch Hunderte Farbnuancen durch Kompressionsartefakte.
+
+1. Öffne das herunterskalierte Bild in **Aseprite**.
+2. Wandle den Farbmodus von *RGB* auf **Indiziert (Indexed)** um.
+3. Begrenze die Farbpalette streng auf **16 Farben** (Farb-Index `0` bis `15`).
+4. Ersetze die Farben der indizierten Palette manuell durch die im Turniersystem oder in der `sponsors.json` definierten **9-Bit-Atari-Werte** (RGB-Stufen von 0 bis 7, z. B. `#700` für sattes Retro-Rot).
+5. Definiere Farb-Index `0` als transparenten Hintergrund-Chroma-Key.
+
+---
+
+### Schritt 4: Manuelles Pixel-Clean-Up
+Eine KI versteht die mathematische Logik hinter Pixel-Linien nicht vollständig. Jedes generierte Asset benötigt daher ein manuelles Finish durch einen Pixel-Artist:
+
+* **Double-Pixels entfernen:** Schräge Linien dürfen keine "Doppelpixel" (Treppenstufen mit 2 Pixeln Breite) aufweisen. Jede Linie sollte idealerweise sauber im 1-Pixel-Rhythmus ($1\times1$, $1\times2$ oder $1\times3$) verlaufen.
+* **Outlines säubern:** Charaktere benötigen eine klare, dunkle Außenlinie (1 Pixel dick), um sich flackerfrei vom animierten Hintergrund abzuheben.
+* **Symmetrie-Check:** Bei Frontalansichten von Gesichtern oder UI-Elementen unregelmäßige KI-Abweichungen von Hand spiegeln.
+
+---
+
+## 4. Automatisierter Asset-Preloader in JavaScript
+
+Um zu verhindern, dass die State Machine des Turniers startet, bevor alle Grafik-Assets vollständig im Browser geladen sind (was zu unschönen "weißen Kästen" oder Abstürzen führen würde), muss ein asynchroner **Preloader** vorgeschaltet werden.
+
+```javascript
+class AssetLoader {
+    constructor() {
+        this.assets = {};
+        this.totalAssets = 0;
+        this.loadedAssets = 0;
+    }
+
+    /**
+     * Registriert ein Bild-Asset für den Ladevorgang.
+     * @param {string} key - Eindeutiger Name für den Zugriff
+     * @param {string} src - Pfad zur Bilddatei
+     */
+    loadImage(key, src) {
+        this.totalAssets++;
+        const img = new Image();
+        img.src = src;
+        img.onload = () => {
+            this.loadedAssets++;
+            this.checkProgress();
+        };
+        img.onerror = () => {
+            console.error(`Fehler beim Laden des Assets: ${src}`);
+        };
+        this.assets[key] = img;
+    }
+
+    checkProgress() {
+        const progress = this.loadedAssets / this.totalAssets;
+        this.onProgress(progress);
+        
+        if (this.loadedAssets === this.totalAssets) {
+            this.onComplete();
+        }
+    }
+
+    // Callbacks für den Ladebildschirm
+    onProgress(progress) {
+        // Kann für einen Retro-Ladebalken auf dem Canvas genutzt werden
+        console.log(`Lade Assets: ${Math.floor(progress * 100)}%`);
+    }
+
+    onComplete() {
+        console.log("Alle Assets erfolgreich geladen!");
+    }
+
+    get(key) {
+        return this.assets[key];
+    }
+}
+
+// ANWENDUNGSBEISPIEL IN VS CODE (main.js)
+const loader = new AssetLoader();
+
+loader.onProgress = (progress) => {
+    // Rendere Retro-Ladebalken auf dem Canvas
+    const canvas = document.getElementById("viewport");
+    const ctx = canvas.getContext("2d");
+    ctx.fillStyle = "#000";
+    ctx.fillRect(0, 0, 320, 200);
+    
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(10, 90, 300, 20); // Rahmen
+    ctx.fillStyle = "#070"; // Grüner Atari-Balken
+    ctx.fillRect(12, 92, 296 * progress, 16);
+};
+
+loader.onComplete = () => {
+    // Starte State Machine
+    console.log("Starte das Turnier...");
+    // gameStateMachine.transitionTo(STATES.INTRO);
+};
+
+// Registrierung aller benötigten Assets
+loader.loadImage("title_bg", "assets/gfx/backgrounds/intro_title.png");
+loader.loadImage("podium_bg", "assets/gfx/backgrounds/podium_scene.png");
+loader.loadImage("judges", "assets/gfx/sprites/judges.png");
+loader.loadImage("ui", "assets/gfx/sprites/ui_symbols.png");
+```
+
+---
+
+## 5. GitHub Commit-Konventionen für Assets
+
+Änderungen und Ergänzungen an den Grafikdaten müssen den Vorgaben unserer Programmier-Conventions entsprechen und zwingend mittels **Conventional Commits** dokumentiert werden.
+
+| Commit-Typ | Scope | Beschreibung | Beispiel |
+| :--- | :--- | :--- | :--- |
+| `feat` | `assets` | Hinzufügen eines völlig neuen Sprites oder Hintergrunds. | `feat(assets): add right-aligned crowd silhouettes for stadium bg` |
+| `fix` | `assets` | Beheben von Pixelfehlern, Outline-Schnittstellen oder Transparanzfehlern. | `fix(assets): resolve transparency index on Heineklon flag` |
+| `perf` | `assets` | Reduktion der Dateigröße durch Farb-Indizierung oder optimalere Spritesheets. | `perf(assets): quantize title_bg to strict 16-color Atari palette` |
+| `refactor` | `assets` | Umstrukturierung eines Spritesheets (z. B. Grid-Größe geändert). | `refactor(assets): reorganize athlete spritesheet to 48x48 grid` |
+
+--- PATH: doc/drinking-games-bootstrap-prototype.md ---
+# Atari ST - HTML5/JS Bootstrap-Prototyp
+
+Dieses Dokument enthält den vollständigen, lauffähigen Quellcode für euren ersten funktionstüchtigen **Retro-Prototyp** der Drinking Games [cite: 16]. Da HTML-Dateien im Notebook-Studio-Panel aus Sicherheitsgründen blockiert werden, haben wir den Code für euch in diesem Markdown-Dokument als kopierbare Schablone abgelegt [cite: 16].
+
+Ihr könnt den untenstehenden Code-Block einfach kopieren, in Visual Studio Code als `index.html` abspeichern und direkt über einen lokalen Webserver (z. B. die VS Code-Erweiterung **Live Server** oder mittels **Vite**) im Browser starten [cite: 1421]!
+
+---
+
+## 🎮 Features des Prototyps
+
+1. **Atari ST Grafik-Simulation (Shifter Chip):**
+   * Das Spiel wird intern mit der echten Low-Res-Auflösung von **320 x 200 Pixeln** gerendert und per CSS verlustfrei und gestochen scharf im Browser skaliert (`image-rendering: pixelated`) [cite: 16].
+   * Über einen softwareseitigen Shader-Effekt werden **CRT-Scanlines** emuliert (jede zweite Bildzeile wird leicht abgedunkelt) [cite: 16].
+   * Zwei sanft animierte **Copperbars** (Farbverläufe auf Zeilenebene) gleiten durch den Hintergrund und erzeugen echtes Amiga- und Atari-ST-Demoszene-Feeling [cite: 39].
+
+2. **Native YM2149 Soundchip-Emulation (WebAudio):**
+   * Es werden **keine externen Sounddateien** geladen! Die Chiptunes werden mathematisch in Echtzeit im Browser über die **Web Audio API** generiert [cite: 1416].
+   * Der Synthesizer simuliert zwei YM2149-Spuren (Kanal A für Melodie, Kanal B für den Bass) mit harten, charakteristischen Rechteckschwingungen (`square` wave) [cite: 1258].
+   * **Der Lall-Effekt:** Wenn ihr den "DRUNK MODE" aktiviert, moduliert ein LFO (Low Frequency Oscillator) die Frequenzen und verzögert das Tempo der Noten-Sequenz sinusförmig – der Sound fängt amüsant an zu eiern, zu verzerren und zu lallen!
+
+3. **Rechtssichere Sponsoren-Parodien:**
+   * Wechselt die Sponsoren mit den Pfeiltasten (Links/Rechts) oder Touch-Gesten [cite: 14]. Euer Spieler-Profil wird sofort an die exakte, begrenzte **16-Farben-Atari-Farbpalette** des parodierten Sponsors angepasst [cite: 1457].
+   * Die Flagge wird in Pixel-Art gerendert und zeigt verballhornte Logos (Laute für *Grinness*, Asterisk für *Heineklon*, Sonne für *Jägerkleister*) [cite: 3, 4, 11].
+
+4. **Universal Input System (Tastatur & Touch):**
+   * Funktioniert auf dem PC per Tastatur (A/D oder Pfeiltasten, Leertaste) sowie auf mobilen Geräten durch unsichtbare, großflächige Touch-Zonen auf der linken und rechten Bildschirmhälfte.
+
+---
+
+## 🛠️ Der HTML5 / JavaScript-Quellcode (`index.html`)
+
+Kopiert den folgenden Code-Block vollständig in eine Datei namens `index.html` in eurem VS-Code-Arbeitsverzeichnis [cite: 1421]:
+
+```html
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Atari ST Drinking Games - Retro Bootstrap Prototype</title>
+    <style>
+        /* Atari ST / Retro Arcade Styling */
+        body {
+            background-color: #111;
+            color: #00ff00;
+            font-family: 'Courier New', Courier, monospace;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        #game-container {
+            position: relative;
+            background: #000;
+            border: 8px solid #333;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.2);
+            border-radius: 4px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Upscaled pixelated Canvas rendering */
+        canvas {
+            display: block;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: -webkit-crisp-edges;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+            background-color: #000;
+            width: 640px; /* Upscaled from 320px */
+            height: 400px; /* Upscaled from 200px */
+        }
+
+        /* UI Control Panel Overlay */
+        #control-panel {
+            margin-top: 15px;
+            padding: 10px;
+            background: #222;
+            border: 2px solid #555;
+            border-radius: 4px;
+            text-align: center;
+            width: 620px;
+            box-sizing: border-box;
+            z-index: 10;
+        }
+
+        button {
+            background-color: #333;
+            color: #00ff00;
+            border: 2px solid #00ff00;
+            padding: 8px 15px;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 4px;
+            margin: 5px;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background-color: #00ff00;
+            color: #000;
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+
+        input[type="text"] {
+            background-color: #000;
+            color: #00ff00;
+            border: 2px solid #555;
+            padding: 8px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 14px;
+            width: 150px;
+            border-radius: 4px;
+            text-align: center;
+            outline: none;
+        }
+
+        input[type="text"]:focus {
+            border-color: #00ff00;
+        }
+
+        .hint {
+            color: #888;
+            font-size: 11px;
+            margin-top: 8px;
+        }
+
+        /* Touch layout buttons for mobile testing */
+        #touch-controls {
+            display: none;
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+        }
+
+        .touch-button {
+            position: absolute;
+            width: 50%;
+            height: 100%;
+            pointer-events: auto;
+            opacity: 0.1;
+            background-color: rgba(255,255,255,0.05);
+            transition: opacity 0.1s;
+        }
+
+        .touch-button:active {
+            opacity: 0.3;
+        }
+
+        #touch-left { left: 0; border-right: 1px dashed rgba(255,255,255,0.2); }
+        #touch-right { right: 0; }
+
+        @media (max-width: 700px) {
+            canvas {
+                width: 320px;
+                height: 200px;
+            }
+            #game-container {
+                border-width: 4px;
+            }
+            #control-panel {
+                width: 320px;
+            }
+            #touch-controls {
+                display: block;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <!-- The Virtual Atari ST Shifter Screen (320x200 Internal Resolution) -->
+        <canvas id="atari-screen"></canvas>
+        
+        <!-- Mobile/Touch Control Overlay -->
+        <div id="touch-controls">
+            <div id="touch-left" class="touch-button"></div>
+            <div id="touch-right" class="touch-button"></div>
+        </div>
+    </div>
+
+    <!-- Dev/Control HUD -->
+    <div id="control-panel">
+        <div>
+            <label for="player-name">NAME: </label>
+            <input type="text" id="player-name" maxlength="8" value="SPIELER 1">
+            <button id="btn-audio">START AUDIO CHIP</button>
+            <button id="btn-drunk">TOGGLE DRUNK MODE (LALLEN)</button>
+        </div>
+        <div class="hint">
+            <strong>Steuerung:</strong> Pfeiltasten Links/Rechts zum Wechseln der Sponsoren. Leertaste für Sound-Trigger.
+        </div>
+    </div>
+
+    <script>
+        // Retro Bootstrap Game Module
+        const CONFIG = {
+            width: 320,
+            height: 200,
+            scanlineIntensity: 0.15,
+            sponsors: [
+                { id: "grinness", name: "GRINNESS", type: "STOUT", color: "#111111", flagColor: "#ffcc00", palette: ["#000000", "#111111", "#ffaa00", "#ffcc00", "#ffffff"], notes: [60, 62, 64, 65, 67, 69, 71, 72] },
+                { id: "heineklon", name: "HEINEKLON", type: "LAGER", color: "#006622", flagColor: "#e60000", palette: ["#000000", "#006622", "#ffffff", "#e60000", "#cccccc"], notes: [67, 65, 64, 62, 60, 59, 57, 55] },
+                { id: "jaegerkleister", name: "JAEGERKLEISTER", type: "LIQUEUR", color: "#331a00", flagColor: "#00ff00", palette: ["#000000", "#331a00", "#ff3300", "#00ff00", "#ffffff"], notes: [57, 60, 64, 69, 67, 64, 60, 57] },
+                { id: "mack_damions", name: "MACK DAMION'S", type: "WHISKEY", color: "#1a0f00", flagColor: "#ffffff", palette: ["#000000", "#1a0f00", "#ffaa00", "#804000", "#ffffff"], notes: [60, 64, 67, 64, 69, 67, 64, 60] }
+            ]
+        };
+
+        class GameBootstrap {
+            constructor() {
+                this.canvas = document.getElementById('atari-screen');
+                this.ctx = this.canvas.getContext('2d');
+                this.canvas.width = CONFIG.width;
+                this.canvas.height = CONFIG.height;
+
+                // Offscreen canvas for double-buffered Atari ST style render
+                this.offscreen = document.createElement('canvas');
+                this.offscreen.width = CONFIG.width;
+                this.offscreen.height = CONFIG.height;
+                this.octx = this.offscreen.getContext('2d');
+
+                // Game State
+                this.currentSponsorIndex = 0;
+                this.playerName = "SPIELER 1";
+                this.activeKeys = {};
+                this.frame = 0;
+                
+                // Copperbar configurations (horizontal raster color loops)
+                this.copperBars = [
+                    { y: 50, speed: 1.5, height: 16, direction: 1 },
+                    { y: 120, speed: -1.2, height: 24, direction: -1 }
+                ];
+
+                // Native Audio Emulation YM2149
+                this.audioCtx = null;
+                this.synthIsRunning = false;
+                this.lallIntensity = 0;
+                this.tempoWobble = 0;
+
+                this.initEvents();
+                this.setupUIBindings();
+            }
+
+            initEvents() {
+                // Key down listeners
+                window.addEventListener('keydown', (e) => {
+                    this.activeKeys[e.code] = true;
+                    this.handleInput(e.code);
+                });
+
+                window.addEventListener('keyup', (e) => {
+                    this.activeKeys[e.code] = false;
+                });
+
+                // Touch support
+                document.getElementById('touch-left').addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    this.cycleSponsor(-1);
+                });
+                document.getElementById('touch-right').addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    this.cycleSponsor(1);
+                });
+            }
+
+            setupUIBindings() {
+                const nameInput = document.getElementById('player-name');
+                nameInput.addEventListener('input', (e) => {
+                    this.playerName = e.target.value.toUpperCase();
+                });
+
+                const audioBtn = document.getElementById('btn-audio');
+                audioBtn.addEventListener('click', () => {
+                    this.toggleAudio();
+                });
+
+                const drunkBtn = document.getElementById('btn-drunk');
+                drunkBtn.addEventListener('click', () => {
+                    this.toggleDrunkMode();
+                });
+            }
+
+            cycleSponsor(direction) {
+                this.currentSponsorIndex = (this.currentSponsorIndex + direction + CONFIG.sponsors.length) % CONFIG.sponsors.length;
+                this.playCoinSfx();
+            }
+
+            handleInput(code) {
+                if (code === 'ArrowLeft' || code === 'KeyA') {
+                    this.cycleSponsor(-1);
+                }
+                if (code === 'ArrowRight' || code === 'KeyD') {
+                    this.cycleSponsor(1);
+                }
+                if (code === 'Space') {
+                    this.playConfirmSfx();
+                }
+            }
+
+            // --- Yamaha YM2149 WebAudio Emulation ---
+            initAudio() {
+                if (this.audioCtx) return;
+                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                this.audioCtx = new AudioContextClass();
+
+                // Master gain and simple 4-bit DAC emulated volume stepping
+                this.masterGain = this.audioCtx.createGain();
+                this.masterGain.gain.value = 0.4;
+                this.masterGain.connect(this.audioCtx.destination);
+
+                this.startSequencer();
+            }
+
+            toggleAudio() {
+                if (!this.audioCtx) {
+                    this.initAudio();
+                    document.getElementById('btn-audio').textContent = "STOP AUDIO CHIP";
+                    this.synthIsRunning = true;
+                } else {
+                    if (this.audioCtx.state === 'running') {
+                        this.audioCtx.suspend();
+                        document.getElementById('btn-audio').textContent = "START AUDIO CHIP";
+                        this.synthIsRunning = false;
+                    } else if (this.audioCtx.state === 'suspended') {
+                        this.audioCtx.resume();
+                        document.getElementById('btn-audio').textContent = "STOP AUDIO CHIP";
+                        this.synthIsRunning = true;
+                    }
+                }
+            }
+
+            toggleDrunkMode() {
+                this.isDrunk = !this.isDrunk;
+                const btn = document.getElementById('btn-drunk');
+                if (this.isDrunk) {
+                    btn.style.backgroundColor = CONFIG.sponsors[this.currentSponsorIndex].flagColor;
+                    btn.style.color = "#000";
+                } else {
+                    btn.style.backgroundColor = "#333";
+                    btn.style.color = "#00ff00";
+                }
+            }
+
+            playCoinSfx() {
+                if (!this.audioCtx || !this.synthIsRunning) return;
+                const osc = this.audioCtx.createOscillator();
+                const gain = this.audioCtx.createGain();
+                osc.type = "square";
+                osc.frequency.setValueAtTime(800, this.audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(1200, this.audioCtx.currentTime + 0.1);
+                
+                gain.gain.setValueAtTime(0.3, this.audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0, this.audioCtx.currentTime + 0.15);
+
+                osc.connect(gain);
+                gain.connect(this.masterGain);
+                osc.start();
+                osc.stop(this.audioCtx.currentTime + 0.15);
+            }
+
+            playConfirmSfx() {
+                if (!this.audioCtx || !this.synthIsRunning) return;
+                const osc = this.audioCtx.createOscillator();
+                const gain = this.audioCtx.createGain();
+                osc.type = "square";
+                osc.frequency.setValueAtTime(400, this.audioCtx.currentTime);
+                osc.frequency.setValueAtTime(600, this.audioCtx.currentTime + 0.08);
+                osc.frequency.setValueAtTime(1000, this.audioCtx.currentTime + 0.16);
+                
+                gain.gain.setValueAtTime(0.4, this.audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0, this.audioCtx.currentTime + 0.3);
+
+                osc.connect(gain);
+                gain.connect(this.masterGain);
+                osc.start();
+                osc.stop(this.audioCtx.currentTime + 0.3);
+            }
+
+            startSequencer() {
+                let noteIndex = 0;
+                const playStep = () => {
+                    if (!this.synthIsRunning) {
+                        setTimeout(playStep, 150);
+                        return;
+                    }
+
+                    // Drunken "Lall-Effekt" speed wobble emulieren
+                    if (this.isDrunk) {
+                        this.lallIntensity = Math.sin(this.frame * 0.08) * 0.25;
+                        this.tempoWobble = Math.cos(this.frame * 0.12) * 60; // wobble delay time
+                    } else {
+                        this.lallIntensity = 0;
+                        this.tempoWobble = 0;
+                    }
+
+                    const sponsor = CONFIG.sponsors[this.currentSponsorIndex];
+                    const baseMidiNote = sponsor.notes[noteIndex % sponsor.notes.length];
+                    
+                    // MIDI Frequency converter helper with Drunk Bend
+                    const midiToFreq = (note) => {
+                        return 440 * Math.pow(2, (note + this.lallIntensity - 69) / 12);
+                    };
+
+                    const now = this.audioCtx.currentTime;
+
+                    // Channel A: Main Melody Square Wave
+                    const oscA = this.audioCtx.createOscillator();
+                    const gainA = this.audioCtx.createGain();
+                    oscA.type = "square";
+                    oscA.frequency.setValueAtTime(midiToFreq(baseMidiNote), now);
+                    
+                    gainA.gain.setValueAtTime(0.2, now);
+                    gainA.gain.linearRampToValueAtTime(0, now + 0.25);
+
+                    oscA.connect(gainA);
+                    gainA.connect(this.masterGain);
+                    oscA.start();
+                    oscA.stop(now + 0.3);
+
+                    // Channel B: Bass Arpeggio / Companion
+                    const oscB = this.audioCtx.createOscillator();
+                    const gainB = this.audioCtx.createGain();
+                    oscB.type = "square";
+                    oscB.frequency.setValueAtTime(midiToFreq(baseMidiNote - 12), now); // One Octave Down
+                    
+                    gainB.gain.setValueAtTime(0.15, now);
+                    gainB.gain.linearRampToValueAtTime(0, now + 0.2);
+
+                    oscB.connect(gainB);
+                    gainB.connect(this.masterGain);
+                    oscB.start();
+                    oscB.stop(now + 0.25);
+
+                    noteIndex++;
+                    setTimeout(playStep, 160 + this.tempoWobble);
+                };
+
+                playStep();
+            }
+
+            // --- Atari ST Rendering Engine Emulation ---
+            update() {
+                this.frame++;
+
+                // Animate Copperbars (sine wave paths)
+                this.copperBars.forEach((bar, idx) => {
+                    bar.y += bar.speed * bar.direction;
+                    if (bar.y < 35 || bar.y > 140) {
+                        bar.direction *= -1;
+                    }
+                });
+            }
+
+            render() {
+                const sponsor = CONFIG.sponsors[this.currentSponsorIndex];
+
+                // Clear screen buffer with main background (index 0 of current palette)
+                this.octx.fillStyle = sponsor.color;
+                this.octx.fillRect(0, 0, CONFIG.width, CONFIG.height);
+
+                // Draw Copperbars on background layer
+                this.renderCopperbars();
+
+                // Upper Statusbar in High-Contrast (Atari ST Med-Res Simulation)
+                this.octx.fillStyle = "#000000";
+                this.octx.fillRect(0, 0, CONFIG.width, 30);
+                this.octx.fillStyle = sponsor.flagColor;
+                this.octx.fillRect(0, 28, CONFIG.width, 2);
+
+                // Upper status bar texts
+                this.octx.fillStyle = "#ffffff";
+                this.octx.font = "8px 'Courier New', monospace";
+                this.octx.fillText("ATARI ST DRINKING ENGINE V3", 10, 14);
+                this.octx.fillText(`PALETTE: 9-BIT SHIFTER`, 180, 14);
+
+                // Render Sponsor Details Card (Branding elements)
+                this.octx.fillStyle = "#ffffff";
+                this.octx.fillRect(40, 60, 240, 80);
+                this.octx.fillStyle = "#000000";
+                this.octx.fillRect(42, 62, 236, 76);
+
+                // Drawing Parody Flag (Atari ST low-res simulation)
+                this.octx.fillStyle = sponsor.flagColor;
+                this.octx.fillRect(52, 72, 48, 24);
+                
+                // Parodied Brand Logo (Simple abstract icon in flag center)
+                this.octx.fillStyle = "#000";
+                this.octx.font = "bold 14px 'Courier New', monospace";
+                if (sponsor.id === "grinness") {
+                    this.octx.fillText("♫", 70, 90); // Laute / Harfen parodie
+                } else if (sponsor.id === "heineklon") {
+                    this.octx.fillText("*", 70, 91); // Asterisk parodie
+                } else if (sponsor.id === "jaegerkleister") {
+                    this.octx.fillText("☼", 70, 90); // Schielender Elchkopf parodie
+                } else {
+                    this.octx.fillText("⌂", 70, 89); // Holzfass parodie
+                }
+
+                // Texts inside registration card
+                this.octx.fillStyle = "#ffffff";
+                this.octx.font = "bold 9px 'Courier New', monospace";
+                this.octx.fillText(`CHALLENGER: ${this.playerName}`, 115, 80);
+                this.octx.fillStyle = sponsor.flagColor;
+                this.octx.fillText(`SPONSOR:   ${sponsor.name}`, 115, 95);
+                this.octx.fillStyle = "#888888";
+                this.octx.fillText(`PROD TYPE: ${sponsor.type}`, 115, 110);
+
+                // Active Controls Indicator Footer
+                this.octx.fillStyle = "#000";
+                this.octx.fillRect(0, 165, CONFIG.width, 35);
+                this.octx.strokeStyle = "#555";
+                this.octx.beginPath();
+                this.octx.moveTo(0, 165);
+                this.octx.lineTo(CONFIG.width, 165);
+                this.octx.stroke();
+
+                this.octx.fillStyle = "#00ff00";
+                this.octx.font = "8px 'Courier New', monospace";
+                this.octx.fillText("PRESS LEFT/RIGHT OR TOUCH SIDES TO CHANGE SPONSOR", 15, 180);
+                this.octx.fillText("SPACE: KEYBOARD SOUND-TRIGGER / CONFIRM SELECTION", 15, 192);
+
+                // Blit Buffer to Screen and apply scanlines emulation
+                this.ctx.drawImage(this.offscreen, 0, 0);
+                this.applyScanlines();
+            }
+
+            renderCopperbars() {
+                this.copperBars.forEach((bar) => {
+                    const grad = this.octx.createLinearGradient(0, bar.y, 0, bar.y + bar.height);
+                    grad.addColorStop(0, "rgba(0,0,0,0)");
+                    grad.addColorStop(0.3, CONFIG.sponsors[this.currentSponsorIndex].flagColor);
+                    grad.addColorStop(0.5, "#ffffff");
+                    grad.addColorStop(0.7, CONFIG.sponsors[this.currentSponsorIndex].flagColor);
+                    grad.addColorStop(1, "rgba(0,0,0,0)");
+                    
+                    this.octx.fillStyle = grad;
+                    this.octx.fillRect(0, bar.y, CONFIG.width, bar.height);
+                });
+            }
+
+            applyScanlines() {
+                // Emulate physical CRT beam by darkening alternate lines
+                this.ctx.fillStyle = `rgba(0, 0, 0, ${CONFIG.scanlineIntensity})`;
+                for (let y = 0; y < CONFIG.height; y += 2) {
+                    this.ctx.fillRect(0, y, CONFIG.width, 1);
+                }
+            }
+
+            loop() {
+                this.update();
+                this.render();
+                requestAnimationFrame(() => this.loop());
+            }
+        }
+
+        // Boot system when page loads
+        window.onload = () => {
+            const game = new GameBootstrap();
+            game.loop();
+        };
+    </script>
+</body>
+</html>
+```
+
+---
+
+## 🚀 So startet ihr das Spiel in VS Code
+
+1. Erstellt eine neue Datei namens **`index.html`** in VS Code [cite: 1421].
+2. Kopiert den obigen HTML-Code und fügt ihn dort ein.
+3. Installiert in VS Code die Erweiterung **Live Server** (von *Ritwick Dey*), falls noch nicht geschehen.
+4. Macht einen Rechtsklick auf eure `index.html` und wählt **"Open with Live Server"**.
+5. Klickt im Browser auf **"START AUDIO CHIP"** (WebAudio erfordert eine Benutzerinteraktion, bevor Sound abgespielt werden darf) [cite: 1416].
+6. Nutzt die Pfeiltasten, um das Layout und die Hymne der verschiedenen Sponsoren live durchzutesten!
+7. Schaltet den **"DRUNK MODE"** an, um den genialen WebAudio Lall- und Eiereffekt in Aktion zu hören [cite: 26].
+
+--- PATH: doc/drinking-games-directory-template.md ---
+# Drinking Games – Verzeichnisstruktur & Projekt-Template
+
+Dieses Dokument definiert das standardisierte Dateisystem und die Verzeichnisstruktur für das Atari ST-inspirierte Trinkspiel-Projekt. Es stellt sicher, dass die Applikation modular, leicht erweiterbar (durch neue Drink-Sponsoren und Spieldisziplinen) und optimal für die Entwicklung in **Visual Studio Code** vorbereitet ist.
+
+---
+
+## 1. Verzeichnisbaum (Directory Tree)
+
+Die WebApp wird als rein clientseitige Anwendung (Single Page Application - SPA) strukturiert, die ohne aufwendige Build-Pipelines auskommt, indem sie **native ES6-Module** verwendet.
+
+```text
+drinking-games/
+├── .git/                        # Git-Versionsverwaltung
+├── .github/                     # GitHub-spezifische Konfigurationen
+│   └── workflows/
+│       └── ci.yml               # Einfache CI/CD Pipeline (z.B. GitHub Pages Deployment)
+├── .husky/                      # Git-Hooks (z.B. pre-commit zur Prüfung von Commit-Messages)
+│   ├── _/
+│   └── commit-msg               # Hook-Skript zur Validierung der Conventional Commits
+├── assets/                      # Statische Grafik- und Audio-Assets
+│   ├── fonts/
+│   │   └── atari-classic.woff2  # Atari ST Systemfont (8x8 Monospace-Pixel-Schriftart)
+│   └── gfx/                     # Bild-Assets im indizierten Atari ST Farbraum (max. 16 Farben)
+│       ├── background/
+│       │   ├── intro.png        # Startbildschirm (320x200 Pixel)
+│       │   └── podium.png       # Siegerehrungs-Podest (320x200 Pixel)
+│       ├── judges/
+│       │   └── judges_sheet.png # Spritesheet der Schiedsrichter (Clara, Dieter, Svetlana)
+│       └── sprites/
+│           ├── athletes_sheet.png # Spritesheet der Athleten (Animationsphasen)
+│           └── ui_sheet.png     # UI-Elemente, Flaggen-Muster, Ladebalken
+├── css/                         # Stylesheets
+│   └── retro.css                # CRT-Scanline-Simulation, Pixelated Rendering, CSS Grid
+├── data/                        # JSON-Konfigurationsdateien (Datenschicht)
+│   └── sponsors.json            # Marken-Parodien, 9-Bit-Paletten und Chiptune-Noten-Arrays
+├── js/                          # JavaScript-Quellcode (ES6 Module)
+│   ├── audio/
+│   │   ├── ChiptuneSynth.js     # Yamaha YM2149 Soundchip-Emulator (Web Audio API)
+│   │   └── MusicPlayer.js       # Sequencer für prozedurale sponsors.json Hymnen & SFX
+│   ├── core/
+│   │   ├── App.js               # Einstiegspunkt & Initialisierung (bootstrap)
+│   │   ├── AssetLoader.js       # Asynchroner Preloader für Grafiken und Fonts
+│   │   ├── GameLoop.js          # Präzises Delta-Time-Timing (Atari ST 50Hz/60Hz V-Sync)
+│   │   └── StateMachine.js      # Globaler Zustands-Manager (Lobby -> Spieldurchlauf)
+│   ├── disciplines/
+│   │   ├── BaseDiscipline.js    # Abstrakte Klasse / IDiscipline Interface-Definition
+│   │   ├── BottleFlip.js        # Disziplin: Kronkorken-Schnippen (Winkel & Kraft-Timing)
+│   │   ├── ChugSiphon.js        # Disziplin: Trichter-Exen (Rhythmisches Button-Mashing)
+│   │   ├── BalanceHold.js       # Disziplin: Masskrug-Stemmen (Analoges links/rechts Balancieren)
+│   │   └── StumbleRun.js        # Disziplin: Schlangenlinien-Lauf (Input-Lag & Alkohol-Pegel)
+│   ├── input/
+│   │   └── UnifiedInput.js      # Tastatur-, Touchscreen-Zweizonen- & HTML5-Gamepad-Mapper
+│   ├── render/
+│   │   └── AtariRenderer.js     # Canvas-Renderer mit Scanline-Rasterung & Palette-Splits
+│   └── ui/
+│       ├── LobbyManager.js      # Spieler-Registrierung, Sponsoren-Auswahl & sample-Trigger
+│       ├── ScoringScreen.js     # Visualisierung der Schiedsrichter-Noten & Animationen
+│       └── VictoryPodium.js     # Siegerehrungs-Ablauf, Flaggen-Hissen & verlangsamtes Audio
+├── docs/                        # Technische Spezifikationen (Markdown)
+│   ├── drinking-games-architecture.md
+│   ├── drinking-games-asset-workflow.md
+│   ├── drinking-games-disciplines.md
+│   ├── drinking-games-judges.md
+│   ├── drinking-games-pixel-art-specifications.md
+│   ├── drinking-games-programming-conventions.md
+│   ├── drinking-games-sponsors-audio.md
+│   └── drinking-games-ui-lobby.md
+├── .gitignore                   # Git-Ausschlussregeln
+├── index.html                   # HTML-Grundgerüst mit `<canvas>`
+├── package.json                 # Node-Konfiguration (ausschließlich für lokale Dev-Server & Linter)
+└── README.md                    # Projekt-Dokumentation für GitHub
+```
+
+---
+
+## 2. Essenzielle Konfigurationsdateien
+
+### 2.1 `.gitignore`
+Diese Datei verhindert das Committen von unnötigen VS Code Workspace-Caches, Node-Paketen oder temporären Dateien.
+
+```ini
+# .gitignore
+
+# Dependencies
+node_modules/
+package-lock.json
+
+# IDEs and Editors
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Build/Dist (Falls später hinzugefügt)
+dist/
+build/
+```
+
+### 2.2 `package.json`
+Verwendet ausschließlich moderne, ressourcenschonende Tools für die lokale Entwicklung. Als lokaler Web-Server wird **Vite** empfohlen, da er native ES6-Module direkt unterstützt, ohne das Projekt in eine unlesbare Bundle-Datei (wie Webpack) umzuwandeln.
+
+```json
+{
+  "name": "retro-drinking-games",
+  "version": "1.0.0",
+  "description": "Atari ST-style rundenbasiertes Drinking Game im Retro-Look",
+  "main": "index.html",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint js/**/*.js",
+    "prepare": "husky install"
+  },
+  "keywords": [
+    "atari-st",
+    "chiptune",
+    "web-audio-api",
+    "pixel-art",
+    "retro-game",
+    "drinking-game"
+  ],
+  "author": "Gemini Notebook Developer Team",
+  "license": "MIT",
+  "devDependencies": {
+    "vite": "^5.0.0",
+    "eslint": "^8.50.0",
+    "husky": "^8.0.3"
+  }
+}
+```
+
+### 2.3 Husky Commit-Msg Hook (`.husky/commit-msg`)
+Dieser Git-Hook erzwingt, dass jedes Teammitglied die *Conventional Commit*-Konventionen einhält. Falls eine Commit-Nachricht nicht den Regeln entspricht, bricht der Commit mit einer Fehlermeldung ab.
+
+Erstelle die Datei `.husky/commit-msg` mit folgendem Inhalt:
+
+```bash
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+# Regex zur Validierung der Conventional Commits
+commit_message="$(cat "$1")"
+pattern="^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([a-z0-9\-]+\))?: .+"
+
+if ! echo "$commit_message" | grep -iqE "$pattern"; then
+  echo "\n\033[31m[ERROR] Ungültiges Commit-Nachrichten-Format!\033[0m"
+  echo "Erwartet wird ein Format wie:"
+  echo "  \033[32mfeat(audio): implement native square wave synth\033[0m"
+  echo "  \033[32mfix(sponsors): correct 9-bit palette for Grinness\033[0m"
+  echo "  \033[32mdocs(specs): update disciplines documentation\033[0m"
+  echo "Bitte lies 'docs/drinking-games-programming-conventions.md' für Details.\n"
+  exit 1
+fi
+```
+
+---
+
+## 3. Einbindung in Visual Studio Code (VS Code)
+
+Damit das Team optimal in VS Code arbeiten kann, wird die Erstellung einer `.vscode/settings.json` empfohlen. **Diese Datei sollte nicht global ignoriert, sondern ins Repository eingecheckt werden**, um einheitliche Editor-Einstellungen zu garantieren:
+
+Erstelle `.vscode/settings.json`:
+```json
+{
+  "editor.tabSize": 2,
+  "editor.insertSpaces": true,
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "files.eol": "\n",
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+  "eslint.workingDirectories": [
+    "./"
+  ]
+}
+```
+
+---
+
+## 4. Workflows zur Sponsoren- und Disziplinen-Erweiterung
+
+*   **Neuen Sponsor hinzufügen:**
+    1. Trage die Parodie-Marke in `data/sponsors.json` ein (Name, 9-Bit-Atari-Farbpalette, Symbole, Chiptune-Akkorde).
+    2. Füge das neue Flaggen-Icon in das Spritesheet `assets/gfx/sprites/ui_sheet.png` ein.
+    3. Committe die Anpassung mit: `feat(sponsors): add Caronas Extra parody brand`
+*   **Neue Disziplin hinzufügen:**
+    1. Erstelle die neue Klasse (z.B. `MyNewGame.js`) im Ordner `js/disciplines/` und implementiere das `IDiscipline`-Interface.
+    2. Registriere die Klasse in der globalen Spiel-Ladeliste in `js/core/StateMachine.js`.
+    3. Committe die Anpassung mit: `feat(disciplines): implement MyNewGame physics and controls`
+
+--- PATH: doc/drinking-games-disciplines.md ---
+# Detail-Spezifikation: Die Trink-Disziplinen (Minispiele)
+
+Dieses Dokument definiert die spielmechanischen Details, die Eingabesteuerung und die softwareseitige Implementierung der einzelnen Trink-Disziplinen unseres Retro-Partyhits im Stil von *Summer Games* [36] und *World Games*.
+
+## 1. Das modulare Disziplinen-Interface (`IDiscipline`)
+
+Um eine saubere Software-Architektur zu gewährleisten, wird jede Disziplin als eigenständiges Software-Modul implementiert, das eine standardisierte Schnittstelle bedient. Dies entspricht dem **Strategy Pattern** [1565] und erlaubt es dem globalen `TournamentManager`, Minispiele dynamisch zu laden, zu initialisieren und zu steuern.
+
+```typescript
+/**
+ * Einheitliches Interface für alle Spieldisziplinen.
+ * Ermöglicht die einfache Erweiterung des Turniers um neue Minispiele.
+ */
+interface IDiscipline {
+    id: string;                  // Eindeutige Kennung (z.B. "masskrug_stemmen")
+    name: string;                // Anzeigename für Menüs und Schiedsrichter
+    description: string;         // Kurze Anleitung für den Ladebildschirm
+    
+    // Lebenszyklus-Methoden
+    init(players: Player[], currentActivePlayerIndex: number): void;
+    update(deltaTime: number, input: VirtualInputState): void;
+    render(ctx: CanvasRenderingContext2D): void;
+    
+    // Status-Abfragen für den TournamentManager
+    isFinished(): boolean;
+    getScores(): Record<string, number>; // Spieler-ID -> Score (0.0 - 10.0)
+    getDrunkennessDelta(): number;        // Erhöhung des Promillewerts des Spielers
+}
+```
+
+---
+
+## 2. Spezifikation der 4 Haupt-Disziplinen
+
+Jede Disziplin ist nach dem Prinzip **„Easy to Learn, Hard to Master“** entworfen. Die Steuerung ist auf genau **zwei Tasten** (bzw. Touch-Zonen / Gamepad-Buttons) reduziert, erfordert jedoch präzises Timing, Rhythmusgefühl oder Ausdauer.
+
+### Disziplin 1: „Trichter-Exen“ (Siphon-Sprinting)
+*Inspiriert vom 100m-Sprint in Summer Games [231, 36]. Ein reiner Schnelligkeits- und Rhythmustest.*
+
+*   **Szenario:** Der Charakter steht vor einem gefüllten Biertrichter. Sobald das Startsignal ertönt, läuft die Zeit.
+*   **Eingabemechanik (Rhythmisches Button-Mashing):**
+    *   Der Spieler muss abwechselnd die Tasten **BUTTON_A** und **BUTTON_B** drücken.
+    *   **Der Rhythmus-Faktor:** Einfaches, unkontrolliertes Hämmern führt zum „Verschlucken“ (kurze Lähmungsanimation von 1,5 Sekunden, in der keine Eingaben registriert werden). Der Spieler muss einen gleichmäßigen, schnellen Rhythmus finden, um das Getränk optimal herabzuschlucken.
+    *   Die Durchflussgeschwindigkeit erhöht sich proportional zur Frequenz der fehlerfreien Tastenwechsel.
+*   **Siegerehrungs-Relevanz:** Gewertet wird die Gesamtzeit bis zum vollständigen Leeren des Trichters. Eine Zeit unter 4,5 Sekunden führt zu einer Richterwertung nahe 10.0.
+*   **Alkohol-Auswirkung:** Erhöht den Promillewert des Charakters um **0,4 ‰**.
+
+### Disziplin 2: „Masskrug-Stemmen“ (Masskrug-Holding)
+*Ein Balance- und Ausdauertest, ähnlich dem Stabhochsprung oder Gewichtheben in klassischen Sportspielen [36].*
+
+*   **Szenario:** Der Charakter hält einen schweren 1-Liter-Bierkrug mit ausgestrecktem Arm. Ein horizontaler Balken zeigt den „Zittern-Bereich“ und eine Nadel den aktuellen Schwerpunkt des Arms.
+*   **Eingabemechanik (Feinfühliges Gegensteuern):**
+    *   Der Arm sinkt durch die Schwerkraft kontinuierlich nach unten. Gleichzeitig zittert der Arm zufällig (simuliert durch Rauschen / Perlin-Noise).
+    *   Durch kurzes Antippen von **BUTTON_A** steigt der Arm leicht nach oben. Durch Antippen von **BUTTON_B** sinkt er kontrolliert (falls er zu hoch gerät).
+    *   **Der Erschwerungs-Faktor:** Mit fortschreitender Zeit (Sekunden) wird der Arm „schwerer“ (die Abwärtskraft steigt) und das Zittern nimmt unregelmäßig zu. Der grüne Toleranzbereich auf der Anzeige schrumpft.
+*   **Siegerehrungs-Relevanz:** Gewertet wird die gehaltene Zeit in Sekunden, bis der Krug den Toleranzbereich verlässt oder verschüttet wird.
+*   **Alkohol-Auswirkung:** Erhöht den Promillewert des Charakters um **0,1 ‰** (durch gelegentliches Verschütten/Nippen).
+
+### Disziplin 3: „Kronkorken-Flippen“ (Bottlecap-Skeet)
+*Ein zweistufiger Präzisionstest mit physikalischen Hindernissen, ähnlich dem Tontaubenschießen [231, 36].*
+
+*   **Szenario:** Der Charakter muss einen Kronkorken über einen langen Kneipentisch schnippen. Auf dem Tisch befinden sich zufällig platzierte Hindernisse (Bierpfützen, leere Gläser, Erdnussschalen). Am Ende des Tisches befindet sich eine Zielzone mit unterschiedlichen Punktebereichen (Sektoren von 1 bis 10).
+*   **Eingabemechanik (Zweistufiges Timing):**
+    *   **Schritt 1 (Winkel):** Ein Zeiger schwenkt auf einem Halbkreis hin und her. Der Spieler drückt **BUTTON_A**, um den Winkel des Schusses festzulegen.
+    *   **Schritt 2 (Kraft):** Ein vertikaler Balken füllt und leert sich rasant. Der Spieler drückt **BUTTON_A** ein zweites Mal, um die Schnipp-Stärke festzulegen.
+    *   **Physik-Engine:** Der Korken gleitet über das Canvas-Spielfeld. Bierpfützen bremsen ihn stark ab (Reibungskoeffizient erhöht), Gläser lassen ihn abprallen (elastischer Stoß).
+*   **Siegerehrungs-Relevanz:** Gewertet wird der Sektor, in dem der Kronkorken liegen bleibt. Rutscht er über den Tisch hinaus, gibt es 0 Punkte.
+*   **Alkohol-Auswirkung:** Erhöht den Promillewert um **0,0 ‰** (Präzisionsspiel vor dem Trinken).
+
+### Disziplin 4: „Der Schlangenlinien-Lauf“ (The Drunken Walk)
+*Ein Geschicklichkeits- und Reaktionstest, der die physische Beeinträchtigung durch Alkohol direkt spürbar macht [236].*
+
+*   **Szenario:** Der Charakter schwankt im Zickzack-Kurs über eine kurvige, schmale Kneipengasse voller Hindernisse (Barhocker, schlafende Gäste, Pfützen).
+*   **Eingabemechanik (Gegenlenken mit simuliertem Input-Lag):**
+    *   Der Charakter läuft automatisch vorwärts und driftet ständig sinusförmig nach links oder rechts ab.
+    *   Der Spieler muss mit **BUTTON_A** (Gegensteuern nach links) und **BUTTON_B** (Gegensteuern nach rechts) die Balance halten.
+    *   **Der Alkohol-Effekt:** Je höher der aktuelle Promillewert des Spielers ist, desto größer ist das **Eingabe-Lag (Input-Lag)**. Ein Tastendruck wird bei 1,5 ‰ erst mit einer Verzögerung von z.B. 400 Millisekunden im Spiel registriert! Dies simuliert eindrucksvoll die verzögerte Reaktionszeit im betrunkenen Zustand [238].
+*   **Siegerehrungs-Relevanz:** Gewertet wird die zurückgelegte Distanz, bis der Charakter stolpert oder den Gehweg verlässt.
+*   **Alkohol-Auswirkung:** Erhöht den Promillewert des Charakters um **0,3 ‰** am Ziel (Strafbier).
+
+---
+
+## 3. Datenstrukturen für Disziplinen
+
+Für das Speichern und Laden von Turnierzuständen deklariert die Spieldisziplin ihre Ergebnisse in folgender JSON-Struktur, die an das Haupt-Framework zurückgegeben wird:
+
+```json
+{
+  "discipline_id": "masskrug_stemmen",
+  "player_results": [
+    {
+      "player_id": "p1",
+      "raw_value": 45.8,
+      "unit": "seconds",
+      "calculated_score": 9.2,
+      "promille_added": 0.1
+    },
+    {
+      "player_id": "p2",
+      "raw_value": 22.1,
+      "unit": "seconds",
+      "calculated_score": 4.5,
+      "promille_added": 0.1
+    }
+  ]
+}
+```
+
+--- PATH: doc/drinking-games-pixel-art-specifications.md ---
+# Drinking Games: Pixel-Art- und Grafik-Spezifikation (Atari ST Style)
+
+Dieses Dokument definiert die verbindlichen Grafik- und Pixel-Art-Spezifikationen für das Retro-Partyspiel. Ziel ist es, die technische Ästhetik des **Atari ST (Shifter-Videocodec)** originalgetreu nachzubilden und gleichzeitig eine saubere, hochperformante Implementierung über das HTML5 Canvas API zu ermöglichen.
+
+---
+
+## 1. Technische Hardware-Einschränkungen (Atari ST Shifter)
+
+Um das authentische visuelle Gefühl der späten 1980er Jahre zu erreichen, muss das Grafikdesign streng innerhalb der Grenzen der originalen Atari ST Hardware arbeiten:
+
+### 1.1 Auflösung & Aspect Ratio
+*   **Aktives Spielfeld (Low-Res):** **320 x 200 Pixel**. Das Canvas wird im Browser ohne Weichzeichnung (CSS: `image-rendering: pixelated;`) auf ein 16:9- oder 4:3-Verhältnis gestreckt.
+*   **Statusleiste & Menüs (Medium-Res):** **640 x 200 Pixel** (simuliert durch Verdopplung der horizontalen Pixelauflösung). Dies wird für gestochen scharfe Texte verwendet.
+*   **Virtueller Bildwiederholungs-Takt:** Das Rendering is auf **50 Hz (PAL)** synchronisiert, um butterweiches Scrolling und flackerfreie Animationen zu garantieren.
+
+### 1.2 Die 9-Bit Farbpalette (Master Palette)
+Der Atari ST Shifter verfügt über einen Farbraum von **512 Farben**.
+*   Jeder Farbkanal (Rot, Grün, Blau) besitzt **3 Bit** Tiefe (Wertebereich von `0` bis `7`).
+*   **Maximale gleichzeitige Farben:** Streng **16 Farben** auf dem Bildschirm im Low-Res-Modus.
+*   Die Farbpalette im Code wird als Array von 16 Elementen im Format `[R, G, B]` (0-7) deklariert.
+
+```javascript
+// Beispiel für eine Atari ST Master-Farbpalette (Low-Res)
+const masterPalette = [
+    [0, 0, 0], // Index 0: Transparent / Hintergrund-Schwarz
+    [7, 7, 7], // Index 1: Weiß (Text, Glanzlichter)
+    [3, 3, 3], // Index 2: Dunkelgrau (Schatten, Konturen)
+    [5, 5, 5], // Index 3: Hellgrau (Metall, Details)
+    [7, 5, 3], // Index 4: Hautton Hell (Judges / Spieler)
+    [5, 3, 1], // Index 5: Hautton Dunkel / Holz (Tisch)
+    [7, 0, 0], // Index 6: Knallrot (Sponsoren-Details, Clara-Jubel)
+    [4, 0, 0], // Index 7: Dunkelrot (Schatten Rot)
+    [0, 7, 0], // Index 8: Hellgrün (Bierflaschen, Heineklon-Branding)
+    [0, 4, 0], // Index 9: Dunkelgrün (Schatten Grün)
+    [0, 0, 7], // Index 10: Hellblau (Wassereffekte, Grinness-Logo)
+    [0, 0, 4], // Index 11: Dunkelblau (Schatten Blau)
+    [7, 7, 0], // Index 12: Goldgelb (Bier, Messing, Lorbeerkranz)
+    [5, 5, 0], // Index 13: Dunkelgelb (Schatten Gelb)
+    [7, 4, 0], // Index 14: Orange (Flüssigkeiten, Jägerkleister-Branding)
+    [3, 1, 0]  // Index 15: Dunkelbraun (Möbel, Haare)
+];
+```
+
+### 1.3 Scanline Palette-Splits (Raster-Interrupts)
+Um die 16-Farben-Grenze pro Bildschirm zu sprengen, nutzen wir die historische Demoszene-Technik der **Raster-Interrupts**:
+*   Der Bildschirm wird horizontal in vertikale Segmente unterteilt.
+*   **Obere Statuszeile (Pixel-Zeile 0–24):** Verwendet eine kontrastreiche Palette für Text (Blau, Weiß, Schwarz).
+*   **Spielfeld & Judges (Pixel-Zeile 25–170):** Schaltet die Palette auf die Master-Spielfeldpalette um (Hauttöne, Holz, Sponsor-Farben).
+*   **Podest- & Siegerehrung (Pixel-Zeile 171–200):** Schaltet dynamisch auf die Nationalfarben des Sieger-Sponsors um, um dessen Flagge prachtvoll darzustellen.
+
+---
+
+## 2. Brand Parodies & Flaggen-Spezifikation (Rechtssicher)
+
+Alle Sponsoren-Brands sind als humorvolle Verballhornungen realer Marken angelegt. Sie müssen sofort wiedererkennbar sein (über Farben und Getränketyp), dürfen jedoch keine Markenrechte verletzen.
+
+| Originalmarke | Parodie-Name | Primärfarben (Atari ST 9-Bit RGB) | Logo-Motiv (Pixel-Art) | Flaggen-Layout (Low-Res 48x24) |
+| :--- | :--- | :--- | :--- | :--- |
+| **Guinness** | *Grinness* | `[0,0,0]` (Schwarz), `[7,5,1]` (Gold) | Eine krakelige, asymmetrische **Laute** (statt der keltischen Harfe). | Tiefschwarz mit goldgelber Umrandung und Laute im Zentrum. |
+| **Heineken** | *Heineklon* | `[0,5,0]` (Grün), `[7,0,0]` (Rot), `[7,7,7]` (Weiß) | Ein rotes **Sternchen (Asterisk `*`)** anstelle des fünfzackigen Sterns. | Smaragdgrün mit einem horizontalen weißen Balken und rotem Asterisk. |
+| **Jägermeister** | *Jägerkleister* | `[7,3,0]` (Orange), `[0,4,0]` (Dunkelgrün) | Ein stark **schielender Elchkopf**, der einen Bierkrug im Geweih balanciert. | Waldgrün mit orangefarbenem Kreis-Inlay und Elch-Silhouette. |
+| **Jack Daniel's** | *Mack Damion’s* | `[0,0,0]` (Schwarz), `[7,7,7]` (Weiß) | Ein verbeultes **Holzfass** mit der krakeligen Aufschrift *"Old No. 8"*. | Schwarz-Weiß gestreift mit einem zentralen Holzfass-Wappen. |
+| **Corona Extra** | *Caronas Extra* | `[0,4,7]` (Blau), `[7,7,0]` (Gelb), `[7,7,7]` (Weiß) | Eine wackelige, gefaltete **Geburtstags-Papierkrone** mit Limettenscheibe. | Weiß mit einer markanten, hellblauen Meereswelle im unteren Drittel. |
+| **Budweiser** | *Budweicher* | `[7,0,0]` (Rot), `[0,0,5]` (Blau), `[7,7,7]` (Weiß) | Eine riesige, schlaff nach unten hängende **Halsfliege** (Bow-Tie). | Diagonal rot-weiß geteilt mit blauer Halsfliege im Zentrum. |
+| **Smirnoff** | *Schmirnoffski* | `[7,0,0]` (Rot), `[7,7,7]` (Weiß), `[5,5,5]` (Silber) | Ein flachgedrückter **Zylinder-Hut** über einem runden Schild. | Reines Signalrot mit einem weißen Kreis, der den Zylinder einrahmt. |
+
+### Technische Vorgaben für Sponsoren-Logos:
+*   **Größe in Menüs / Lobby:** Exakt **32 x 32 Pixel**.
+*   **Größe auf der Flagge (Podest):** Maximal **16 x 16 Pixel** im Zentrum der **48 x 24 Pixel** großen Nationalflagge.
+*   **Transparenz-Index:** Farbindex `0` (`[0,0,0]`) wird beim Zeichnen als transparent interpretiert und übersprungen.
+
+---
+
+## 3. Die 3 Schiedsrichter (Drinking Judges)
+
+Das Schiedsrichter-Panel sitzt erhöht auf einer hölzernen Tribüne im Hintergrund des Spielfelds. Sie bewerten die Performance der Spieler nach jeder Disziplin.
+
+### 3.1 Sprite-Abmessungen & Layout
+*   **Sitzplatz-Box pro Richter:** **48 x 64 Pixel**.
+*   **Anzahl der Richter:** 3 (2 Frauen, 1 Mann).
+*   **Gesamte Richter-Tribüne:** **144 x 64 Pixel** (wird als statischer Hintergrund gezeichnet, über den die animierten Richter-Körper geblittet werden).
+
+```
+   [ Clara (48x64) ]     [ Dieter (48x64) ]     [ Svetlana (48x64) ]
+   +---------------+     +---------------+     +---------------+
+   |   (Kopf)      |     |    (Kopf)     |     |    (Kopf)     |
+   | [Wertungskarte]|     |  [Bierkrug]   |     |  [Notizblock] |
+   |   (Oberkörper)|     |  (Oberkörper) |     |  (Oberkörper) |
+   +---------------+     +---------------+     +---------------+
+   =============================================================
+                     Gemeinsamer Richtertisch (Holztextur)
+```
+
+### 3.2 Die Richter-Charaktere
+
+#### Richterin 1: Clara (Sportlich-ehrgeizig)
+*   **Aussehen:** Rote, hochgesteckte Haare, sportliches Stirnband, Brille auf der Nasenspitze.
+*   **Verhalten:** Achtet extrem streng auf den Rhythmus.
+*   **Animationen (3 Frames pro Zustand, 50ms Intervall):**
+    *   *Idle:* Schaut gelangweilt von links nach rechts, tippt mit dem Bleistift auf den Tisch.
+    *   *Jubel:* Springt auf, wirft ihr Klemmbrett in die Luft, klatscht wild (Herzchen-Pixel-Effekt über dem Kopf).
+    *   *Enttäuschung:* Schlägt beide Hände vor das Gesicht; eine dicke, animierte Schweißperle tropft an ihrer Schläfe herab.
+
+#### Richter 2: Dieter (Bayerisches Urgestein)
+*   **Aussehen:** Grauer Vollbart, Trachtenhemd, massige Statur.
+*   **Verhalten:** Liebt pure Ausdauer und Kraft.
+*   **Animationen (3 Frames pro Zustand, 75ms Intervall):**
+    *   *Idle:* Nimmt gemütlich einen Schluck aus seinem massiven Steinkrug; Schaumreste bleiben im Bart kleben.
+    *   *Jubel:* Stemmt beide Arme hoch, schwingt den Bierkrug im Kreis (spritzende Bier-Pixel) und schlägt lachend auf den Tisch.
+    *   *Enttäuschung:* Schüttelt langsam den Kopf, schaut traurig in seinen leeren Krug und stellt ihn mit vernehmbarem "Klack" ab.
+
+#### Richterin 3: Svetlana (Eiskalte Kritikerin)
+*   **Aussehen:** Streng nach hinten gekämmtes, blondes Haar, kühler Blick, Pelzkragen.
+*   **Verhalten:** Vergibt fast nie eine 10.0; sehr schwer zu beeindrucken.
+*   **Animationen (3 Frames pro Zustand, 60ms Intervall):**
+    *   *Idle:* Schaut überheblich über ihren Brillenrand, blättert langsam in ihren Notizen.
+    *   *Jubel:* Ein seltenes, breites Lächeln bricht durch; sie applaudiert elegant und wirft dem Spieler ein pixeliges Küsschen zu.
+    *   *Enttäuschung:* Zieht eine Augenbraue hoch, seufzt sichtbar (animierte Atemwolke) und hält emotionslos eine Wertungskarte mit einer eiskalten "1.0" hoch.
+
+---
+
+## 4. Spieler-Charaktere & Animationen
+
+Die Spieler-Sprites stellen die Athleten während der aktiven Minispiele dar.
+
+### 4.1 Technische Spezifikationen
+*   **Sprite-Größe (Hauptcharakter):** **48 x 80 Pixel**.
+*   **Farbtiefe:** Teilt sich die 16-Farben-Masterpalette mit der Umgebung.
+*   **Hauttöne:** Müssen strikt auf die Paletten-Indizes `4` (Hell) und `5` (Schatten/Dunkel) gemappt sein, um eine einfache Farbtransformation (Skin-Color-Swapping) im Code zu ermöglichen.
+
+### 4.2 Animations-Zustände (Disziplin-Spezifisch)
+
+#### 1. Trichter-Exen (Siphon-Sprinting)
+*   **Idle / Start:** Charakter steht bereit, hält den Trichter fest umklammert.
+*   **Schlucken (Loop, 4 Frames):** Der Kopf neigt sich nach hinten, die Kehle bewegt sich rhythmisch auf und ab. Flüssigkeitspegel im Trichter sinkt sichtbar.
+*   **Verschlucken (Fehler-Animation, 3 Frames):** Der Charakter hustet wild, sprüht Flüssigkeitspixel nach vorne und hält sich keuchend die Brust (2 Sekunden Eingabesperre).
+
+#### 2. Masskrug-Stemmen (Masskrug-Halten)
+*   **Ausbalanciert (3 Frames):** Arm ist waagerecht ausgestreckt, leichter, realistischer Zittern-Effekt (1-Pixel-Verschiebung im Wechsel).
+*   **Zittern (Kritischer Bereich, 4 Frames):** Der gesamte Oberkörper zittert heftig. Schweißtropfen spritzen vom Kopf ab, die Knie knicken leicht ein.
+*   **Absturz (Fehlgeschlagen, 5 Frames):** Der Arm knickt nach unten weg, der Krug fällt zu Boden und zerspringt in gelbe Bier- und graue Tonscherben-Pixel.
+
+#### 3. Schlangenlinien-Lauf (Drunken Obstacle Run)
+*   **Laufen (Loop, 6 Frames):** Klassischer 8-Bit-Laufzyklus mit schwankendem Oberkörper.
+*   **Taumeln (Ablenkung, 4 Frames):** Der Charakter stolpert unkontrolliert nach links oder rechts, fängt sich im letzten Moment wieder auf.
+
+---
+
+## 5. Technische Implementierung (HTML5 Canvas & JavaScript)
+
+### 5.1 Sprite-Sheet-Blitting mit Transparenz-Maskierung
+Um Sprites ohne Performance-Verlust auf das Canvas zu zeichnen, verwenden wir ein Offscreen-Canvas als Sprite-Sheet-Quelle und nutzen den nativen Alpha-Kanal für die Transparenz.
+
+```javascript
+class RetroSprite {
+    constructor(imageSrc, spriteWidth, spriteHeight) {
+        this.image = new Image();
+        this.image.src = imageSrc;
+        this.width = spriteWidth;
+        this.height = spriteHeight;
+    }
+
+    // Blittet einen spezifischen Frame aus dem Sprite-Sheet auf den Ziel-Kontext
+    draw(context, frameX, frameY, targetX, targetY) {
+        context.drawImage(
+            this.image,
+            frameX * this.width, // Source X
+            frameY * this.height, // Source Y
+            this.width,          // Source Breite
+            this.height,         // Source Höhe
+            targetX,             // Target X
+            targetY,             // Target Y
+            this.width,          // Target Breite
+            this.height          // Target Höhe
+        );
+    }
+}
+```
+
+### 5.2 CRT-Scanline & Dither-Filter (Atari ST Look)
+Um den typischen Röhrenmonitor-Effekt (CRT) softwareseitig zu simulieren, wird nach dem Haupt-Rendering ein einfacher Scanline-Shader über das Canvas gelegt, der jede zweite Pixelzeile leicht abdunkelt.
+
+```javascript
+function applyRetroCRTFilter(context, width, height) {
+    const imageData = context.getImageData(0, 0, width, height);
+    const data = imageData.data;
+
+    for (let y = 0; y < height; y++) {
+        // Jede zweite Zeile (Scanline-Effekt) um 15% abdunkeln
+        if (y % 2 === 0) {
+            for (let x = 0; x < width; x++) {
+                const index = (y * width + x) * 4;
+                data[index]     = Math.max(0, data[index] * 0.85);     // Rot
+                data[index + 1] = Math.max(0, data[index + 1] * 0.85); // Grün
+                data[index + 2] = Math.max(0, data[index + 2] * 0.85); // Blau
+            }
+        }
+    }
+    context.putImageData(imageData, 0, 0);
+}
+```
+
+---
+
+## 6. Git Commit Richtlinien (Conventional Commits)
+
+Jede grafische Anpassung, jedes neue Sprite-Sheet oder jede Änderung an den Paletten-Registern muss über eine saubere **Conventional Commit Message** auf GitHub dokumentiert werden.
+
+### Erlaubte Typen für Grafik-Assets:
+*   `feat(assets): add parodied Caronas Extra flag and party crown logo`
+*   `fix(sprites): correct Clara's Outraged animation frame alignment`
+*   `perf(renderer): optimize scanline scan-split rendering routine`
+*   `style(palette): adjust Jägerkleister orange to match Atari 9-bit RGB bounds`
+
+--- PATH: doc/drinking-games-programming-conventions.md ---
+# Drinking Games - Technical & Programming Conventions (v4)
+
+This document establishes the official programming conventions, hardware limitations, and workflow guidelines for the 'Drinking Games' WebApp development. All developers must adhere to these standards to ensure a cohesive retro experience and a clean, maintainable codebase.
+
+---
+
+## 1. Documentation & Specification Policy (NEW v4)
+*   **Continuous Documentation:** All newly established rules, technical discoveries, design conventions, or architectural decisions must be documented in detail within the appropriate existing Markdown files or in new dedicated Markdown files.
+*   **Updating Specifications:** When specifications or features change, the corresponding documentation must be updated immediately to prevent outdated documentation. Do not let code and specifications drift apart.
+*   **Version Control for Docs:** Changes to documentation must be committed using clear commit messages (e.g., `docs(specs): update audio engine pitch bending specifications`).
+
+---
+
+## 2. Retro-Style Capabilities & Simulation Standards
+
+### 2.1 Atari ST Video Hardware Simulation (Shifter & Glue)
+To faithfully recreate the late 1980s aesthetic, the rendering engine must emulate the hardware limitations of the Atari ST:
+*   **Resolutions:**
+    *   *Active Gameplay / Minisports:* Low-Resolution Mode (320 × 200 pixels) with a maximum of 16 concurrent colors from a 512-color hardware palette [cite: 16].
+    *   *Menus, Selection Screens & Leaderboards:* Medium-Resolution Mode (640 × 200 pixels) with a maximum of 4 concurrent colors [cite: 39].
+*   **9-Bit Hardware Palette Emulation:**
+    *   All colors must be mapped to 9-bit RGB space (values 0–7 for Red, Green, and Blue) [cite: 39].
+    *   No modern true-color gradients are permitted [cite: 16]. Gradients must be simulated using dither patterns or hardware raster tricks [cite: 39].
+*   **Raster-Interrupts (Scanline Palette-Splits):**
+    *   To display more than 16 colors on a single screen, implement scanline-based palette swapping [cite: 39].
+    *   The `AtariSTRenderer` will swap palettes on horizontal interrupts (simulated via horizontal scanline rendering with `ImageData` in HTML5 Canvas) [cite: 16, 39].
+*   **Flicker Masking via Pillarbox:**
+    *   Flicker during palette switching must be hidden in the black side margins (Pillarbox-margins) [cite: 39]. Register 0 of the active palette must be set to black during the border refresh so that hardware color transitions are invisible [cite: 39].
+
+### 2.2 Chiptunes Sound-Engine (YM2149 Emulation)
+*   **Native Procedural Synthesis:** No external audio formats (like `.mp3`, `.wav`, or tracker files like `.mod` / `.xm`) may be loaded over the network. All sounds must be dynamically synthesized in real-time using the Web Audio API [cite: 26].
+*   **Hardware Emulation Constraints (Yamaha YM2149):**
+    *   Simulate 3 independent square-wave oscillator channels (`OscillatorNode`, `type: "square"`).
+    *   Include 1 pseudo-random noise generator channel for percussion and sound effects (synthesized via an `AudioBuffer` filled with random white noise).
+    *   Include volume envelopes modeled after the 16-level (4-bit) logarithmic DAC of the original chip.
+*   **"Drunken" Audio Effects (Pitch & Speed Bending):**
+    *   To represent a character's in-game intoxication (Promille value), the audio engine must modulate pitch and tempo in real-time.
+    *   Apply a low-frequency oscillator (LFO) to the master pitch to simulate a "wobbly", detuned tape-like pitch bending (lallender Sound).
+    *   Dynamically scale the note sequencer speed (tempo bending) proportional to the active character's sobriety.
+
+### 2.3 Pixel-Art & Spritesheet Guidelines
+*   **Retro Sprite Blitting:** All animations must be packed into unified spritesheets [cite: 16]. Frame rendering must be done using a custom blitter that reads coordinates from a sheet and writes pixels directly to the Canvas to ensure retro-accurate transparency masking and rendering speeds [cite: 16].
+*   **CRT Scanline Filter:** A post-processing shader or software filter must scan the viewport and darken every second horizontal line of pixels to simulate a CRT monitor [cite: 16].
+
+---
+
+## 3. UI, Texts & Localization
+*   **English Language Requirement:** All in-game text, dialogue, instructions, and user interfaces must be exclusively in **English** to match the classic international release style of the 1980s.
+*   **Brand Parody & Copyright Safety:**
+    *   All drinks, sponsors, logos, and national flags must be parodied to avoid copyright infringement [cite: 14].
+    *   Use phonetically similar but legally distinct names (e.g., *Grinness* for Guinness [cite: 4], *Heineklon* for Heineken [cite: 3], *Jägerkleister* for Jägermeister [cite: 11], *Mack Damion's Old No. 8* for Jack Daniel's [cite: 129]).
+    *   Modify logos humorously (e.g., a squinting elk balancing a beer glass on its antlers instead of a majestic stag with a cross) [cite: 11, 14].
+
+---
+
+## 4. Software Architecture & Clean Code
+*   **State-Machine Architecture:** The global application flow must be driven by a rigid, deterministic State-Machine (e.g., `BOOT` -> `INTRO` -> `LOBBY` -> `DISCIPLINE_SELECT` -> `PLAYING` -> `JUDGES_SCORING` -> `LEADERBOARD` -> `PODIUM`) [cite: 42]. Direct jumps or loosely coupled states are prohibited.
+*   **Strategy Pattern (`IDiscipline`):**
+    *   Each sport event (discipline) must implement the `IDiscipline` interface.
+    *   Minigames must be fully decoupled from the core framework, making it trivial to drop in a new discipline (e.g., a new sport event) by registering its class.
+
+---
+
+## 5. GitHub Workflow & Conventional Commits
+To keep the repository history clean and support automated changelog generation, **every commit** must follow the **Conventional Commits** specification:
+
+```
+<type>(<scope>): <description>
+```
+
+### Allowed Types:
+*   `feat`: A new feature (e.g., `feat(disciplines): add Schlangenlinien-Lauf mini-game`)
+*   `fix`: A bug fix (e.g., `fix(audio): resolve WebAudio scheduler sync lag`)
+*   `docs`: Documentation changes (e.g., `docs(specs): document new documentation guidelines in v4`)
+*   `style`: Formatting, missing semi-colons, etc. (no production code change)
+*   `refactor`: Refactoring production code without behavior change
+*   `perf`: Performance improvement (e.g., `perf(renderer): optimize scanline pixel blitter`)
+*   `test`: Adding missing tests or correcting existing tests
+*   `chore`: Maintainance tasks, package updates, etc.
+
+*Developers must verify their commit messages before pushing. Non-conforming commits will be rejected by the pre-commit hooks.*
+
+--- PATH: doc/drinking-games-sponsors-audio.md ---
+# Drinking Games - Sponsors & Audio Specification (Version 3)
+## Legally Safe Brand Parodies & Procedural Chiptune Audio Engine
+
+This document defines the data structures and emulation engines for the game's **Drink Sponsors** and its real-time **Chiptune Audio Engine** [cite: 39]. To protect intellectual property while retaining maximum retro humor and recognizability, all real-world brands are represented through legally safe **Verballhornungen (parodies/spoonerisms)**, altered logos, and modified flag designs [cite: 14]. 
+
+Music and sound effects are fully synthesized in real time via the browser's **Web Audio API**, simulating the legendary **Yamaha YM2149 sound chip** of the Atari ST without loading external audio assets [cite: 26, 39].
+
+---
+
+## 1. Legally Safe Brand Parodies (Verballhornungen)
+
+To prevent trademark and copyright violations, the game employs the following parodied sponsors. Each is designed to be instantly recognizable to players through color associations and beverage types, while remaining completely distinct on a legal level [cite: 14, 40].
+
+### A. grinness (Parody of *Guinness*)
+*   **Beverage Sorte:** Irish Dry Stout [cite: 4].
+*   **Visual Associations:** Deep ruby-black body, creamy ivory head, antique gold accents [cite: 4].
+*   **Logo Parody:** An asymmetrical wooden lute (or stylized bagpipe) instead of the copyrighted Celtic Harp.
+*   **Flag Design:** Solid obsidian-black with a golden-yellow border.
+*   **Atari ST 9-bit Palette Map:**
+    *   `Color 0 (Background):` `#000` (RGB: 0, 0, 0)
+    *   `Color 1 (Cream):` `#776` (Atari ST 9-bit: R:7, G:7, B:6)
+    *   `Color 2 (Antique Gold):` `#651` (Atari ST 9-bit: R:6, G:5, B:1)
+
+### B. Heineklon (Parody of *Heineken*)
+*   **Beverage Sorte:** Dutch Premium Lager [cite: 3].
+*   **Visual Associations:** Smaragd-green, polar white, and cherry red.
+*   **Logo Parody:** A bold red asterisk (`*`) or a red bottle cap instead of the trademarked red five-pointed star.
+*   **Flag Design:** Deep emerald green with a polar-white horizontal stripe across the middle.
+*   **Atari ST 9-bit Palette Map:**
+    *   `Color 0 (Background):` `#030` (Atari ST 9-bit: R:0, G:3, B:0)
+    *   `Color 1 (Red Accent):` `#700` (Atari ST 9-bit: R:7, G:0, B:0)
+    *   `Color 2 (Green):` `#070` (Atari ST 9-bit: R:0, G:7, B:0)
+
+### C. Jägerkleister (Parody of *Jägermeister*)
+*   **Beverage Sorte:** Alpine Herbal Liqueur (Kräuterlikör) [cite: 11].
+*   **Visual Associations:** Dark forest green, warm amber orange, golden brown.
+*   **Logo Parody:** A comically cross-eyed, derpy moose head with a foaming beer mug floating between its antlers, instead of the copyrighted stag head with the glowing Christian cross.
+*   **Flag Design:** Diagonally split from top-left to bottom-right in dark forest green and deep amber orange.
+*   **Atari ST 9-bit Palette Map:**
+    *   `Color 0 (Background):` `#010` (Atari ST 9-bit: R:0, G:1, B:0)
+    *   `Color 1 (Amber):` `#740` (Atari ST 9-bit: R:7, G:4, B:0)
+    *   `Color 2 (Gold Brown):` `#531` (Atari ST 9-bit: R:5, G:3, B:1)
+
+### D. Mack Damion’s Old No. 8 (Parody of *Jack Daniel's Old No. 7*)
+*   **Beverage Sorte:** Charcoal Mellowed Tennessee Whiskey [cite: 129].
+*   **Visual Associations:** Coal-black and silver-white filigree.
+*   **Logo Parody:** A tilted, cartoonish wooden barrel with "Old No. 8 Sour Mash Whiskey" printed in an over-stylized gothic font, without the signature Jack Daniel's scrollwork frame.
+*   **Flag Design:** Vertical split of coal-black and slate-grey with a white dotted border.
+*   **Atari ST 9-bit Palette Map:**
+    *   `Color 0 (Background):` `#000` (RGB: 0, 0, 0)
+    *   `Color 1 (Silver):` `#666` (Atari ST 9-bit: R:6, G:6, B:6)
+    *   `Color 2 (Slate Grey):` `#334` (Atari ST 9-bit: R:3, G:3, B:4)
+
+### E. Caronas Extra (Parody of *Corona Extra*)
+*   **Beverage Sorte:** Mexican Beach Cerveza (Lager with lime) [cite: 3].
+*   **Visual Associations:** Sky blue, sand yellow, neon green (lime), white.
+*   **Logo Parody:** A crooked, hand-drawn paper party crown with a neon-green lime wedge speared on its peak, replacing the majestic Spanish Crown.
+*   **Flag Design:** White background with a single, thick, horizontal sky-blue wave across the center.
+*   **Atari ST 9-bit Palette Map:**
+    *   `Color 0 (Background):` `#047` (Atari ST 9-bit: R:0, G:4, B:7)
+    *   `Color 1 (Sand Yellow):` `#773` (Atari ST 9-bit: R:7, G:7, B:3)
+    *   `Color 2 (Lime Green):` `#370` (Atari ST 9-bit: R:3, G:7, B:0)
+
+### F. Budweicher (Parody of *Budweiser*)
+*   **Beverage Sorte:** American Adjunct Lager [cite: 3].
+*   **Visual Associations:** Crimson red, navy blue, antique silver.
+*   **Logo Parody:** A giant, floppy, slightly deflated bowtie with a tiny wheat grain illustration in its center, instead of the red Budweiser bow-tie label.
+*   **Flag Design:** Horizontal red and white stripes with a dark blue square in the canton containing a golden beer mug.
+*   **Atari ST 9-bit Palette Map:**
+    *   `Color 0 (Background):` `#700` (Atari ST 9-bit: R:7, G:0, B:0)
+    *   `Color 1 (Navy Blue):` `#014` (Atari ST 9-bit: R:0, G:1, B:4)
+    *   `Color 2 (Silver):` `#555` (Atari ST 9-bit: R:5, G:5, B:5)
+
+---
+
+## 2. Dynamic JSON Configuration (`Sponsors.json`)
+
+To enable seamless extensibility without editing game code, sponsors are loaded from a standard JSON configuration. Note that color values utilize hexadecimal syntax but represent exact retro 9-bit palettes (mapped to Atari ST hardware colors `0-7` per channel) [cite: 1457]:
+
+```json
+{
+  "sponsors": [
+    {
+      "id": "grinness",
+      "name": "grinness",
+      "sorte": "Irish Stout",
+      "flagColors": ["#000000", "#777766", "#665511"],
+      "logoSpriteId": "logo_grinness_lute",
+      "anthem": [
+        {"note": "A4", "duration": 0.4},
+        {"note": "D4", "duration": 0.4},
+        {"note": "F4", "duration": 0.2},
+        {"note": "A4", "duration": 0.8}
+      ]
+    },
+    {
+      "id": "heineklon",
+      "name": "Heineklon",
+      "sorte": "Dutch Lager",
+      "flagColors": ["#003300", "#770000", "#007700"],
+      "logoSpriteId": "logo_heineklon_asterisk",
+      "anthem": [
+        {"note": "C4", "duration": 0.3},
+        {"note": "E4", "duration": 0.3},
+        {"note": "G4", "duration": 0.3},
+        {"note": "C5", "duration": 0.6}
+      ]
+    },
+    {
+      "id": "jaegerkleister",
+      "name": "Jägerkleister",
+      "sorte": "Kräuterlikör",
+      "flagColors": ["#001100", "#774400", "#553311"],
+      "logoSpriteId": "logo_jaegerkleister_moose",
+      "anthem": [
+        {"note": "E4", "duration": 0.5},
+        {"note": "B3", "duration": 0.25},
+        {"note": "E4", "duration": 0.25},
+        {"note": "G4", "duration": 0.5}
+      ]
+    }
+  ]
+}
+```
+
+---
+
+## 3. Emulated Atari ST (Yamaha YM2149) Chiptune Sound Engine
+
+This JavaScript class implements native emulation of the Atari ST's YM2149 Programmable Sound Generator (PSG). It generates audio dynamically utilizing the **Web Audio API** [cite: 26, 39].
+
+```javascript
+/**
+ * Emulates the Yamaha YM2149 sound chip with 3 Square Wave channels
+ * and a 4-bit Bitcrusher to simulate the retro DAC output.
+ */
+class YM2149SoundEngine {
+    constructor() {
+        this.ctx = null;
+        this.channels = [];
+        this.bitcrusher = null;
+        this.isMuted = false;
+    }
+
+    init() {
+        // Initialize Web Audio Context
+        this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        // Create 3 emulated hardware channels (Square Waves)
+        for (let i = 0; i < 3; i++) {
+            let osc = this.ctx.createOscillator();
+            let gain = this.ctx.createGain();
+            
+            osc.type = 'square'; // YM2149 native voice
+            osc.frequency.setValueAtTime(0, this.ctx.currentTime);
+            gain.gain.setValueAtTime(0, this.ctx.currentTime);
+            
+            osc.connect(gain);
+            osc.start();
+            
+            this.channels.push({ osc, gain });
+        }
+
+        // Connect channels to a Custom Bitcrusher Node simulating 4-bit amplitude steps (16 volume levels)
+        this.bitcrusher = this.createBitcrusherNode(12500, 4); // 12.5 kHz, 4-bit resolution
+        
+        this.channels.forEach(ch => ch.gain.connect(this.bitcrusher));
+        this.bitcrusher.connect(this.ctx.destination);
+    }
+
+    /**
+     * Recreates retro hardware limitations using a ScriptProcessorNode (fallback)
+     */
+    createBitcrusherNode(targetSampleRate, bitDepth) {
+        const bufferSize = 4096;
+        const node = this.ctx.createScriptProcessor(bufferSize, 1, 1);
+        const steps = Math.pow(2, bitDepth); // 4-bit = 16 discrete volume steps
+        let lastSample = 0;
+        let phaser = 0;
+
+        node.onaudioprocess = (e) => {
+            const input = e.inputBuffer.getChannelData(0);
+            const output = e.outputBuffer.getChannelData(0);
+            const ratio = this.ctx.sampleRate / targetSampleRate;
+
+            for (let i = 0; i < bufferSize; i++) {
+                phaser += 1;
+                if (phaser >= ratio) {
+                    phaser -= ratio;
+                    // Quantize amplitude to 4-bit
+                    let sample = input[i];
+                    lastSample = Math.round(sample * steps) / steps;
+                }
+                output[i] = lastSample; // Introduces retro hiss and aliasing noise
+            }
+        };
+        return node;
+    }
+
+    /**
+     * Map note names to frequencies
+     */
+    getFreq(note) {
+        const notes = {
+            "C3": 130.81, "D3": 146.83, "E3": 164.81, "F3": 174.61, "G3": 196.00, "A3": 220.00, "B3": 246.94,
+            "C4": 261.63, "D4": 293.66, "E4": 329.63, "F4": 349.23, "G4": 392.00, "A4": 440.00, "B4": 493.88,
+            "C5": 523.25, "D5": 587.33, "E5": 659.25, "F5": 698.46, "G5": 783.99, "A5": 880.00, "B5": 987.77
+        };
+        return notes[note] || 0;
+    }
+}
+```
+
+---
+
+## 4. The Drunken Anthem Engine ("Lall-Effekt")
+
+When the tournament winner climbs the podium, their sponsor's anthem is played. If their character has a high **Promillewert (BAC)**, the audio engine dynamically distorts the sound in real-time, creating an amusingly "slurred" and "pitch-bended" performance [cite: 349].
+
+The Lall-Effekt acts on two distinct physical vectors [cite: 349]:
+1.  **Pitch Bending (Schwankende Tonhöhe):** A low-frequency oscillator (LFO) alters the base note frequency, simulating a tape-slipping / motor-failing effect.
+2.  **Speed Bending (Lallendes Tempo):** The scheduler intervals are elongated and randomized, simulating a musician losing the rhythm or falling asleep.
+
+```javascript
+class DrunkenAnthemScheduler {
+    constructor(soundEngine) {
+        this.engine = soundEngine;
+    }
+
+    /**
+     * Plays a sponsor's anthem with real-time drunkenness distortion
+     * @param {Array} notes - Array of Note objects {"note": "C4", "duration": 0.4}
+     * @param {number} bac - Promillewert of the player (e.g. 0.0 to 3.5)
+     */
+    playAnthem(notes, bac) {
+        if (this.engine.ctx.state === 'suspended') {
+            this.engine.ctx.resume();
+        }
+
+        let timeOffset = 0.1;
+        const now = this.engine.ctx.currentTime;
+
+        // Calculate severity of distortion
+        const drunkenness = Math.min(bac / 3.0, 1.0); // Cap at 3.0 Promille
+
+        notes.forEach((item, index) => {
+            // 1. Calculate Speed Bending (Lallendes Tempo)
+            // Drunk players cause notes to lag and drag out irregularly
+            let baseDuration = item.duration;
+            let tempoStretch = 1.0 + (drunkenness * 0.8); // Up to 80% slower
+            let jitter = drunkenness * 0.15 * Math.sin(index * 1.5); // Rhythmic stumbling
+            let duration = (baseDuration * tempoStretch) + jitter;
+
+            // Schedule the note trigger
+            const noteTime = now + timeOffset;
+            const targetFreq = this.engine.getFreq(item.note);
+
+            if (targetFreq > 0) {
+                // Apply note on hardware Channel 0
+                this.engine.channels[0].osc.frequency.setValueAtTime(targetFreq, noteTime);
+                
+                // Set hardware envelope simulation
+                this.engine.channels[0].gain.gain.setValueAtTime(0.3, noteTime);
+                // Sharp decay mimicking retro ADSR envelope
+                this.engine.channels[0].gain.gain.exponentialRampToValueAtTime(0.001, noteTime + duration - 0.05);
+
+                // 2. Calculate Pitch Bending (Lall-Frequenzschwankung)
+                // Modulate frequency via LFO to simulate an uncoordinated slurring tone
+                if (drunkenness > 0.1) {
+                    const lfoSpeed = 3.0; // 3 Hz modulation speed
+                    const maxDetune = targetFreq * 0.12 * drunkenness; // Up to 10% pitch slurring
+                    
+                    // Generate fine pitch wobble curve
+                    let steps = 10;
+                    for (let step = 0; step < steps; step++) {
+                        let stepTime = noteTime + (duration * (step / steps));
+                        let slurredFreq = targetFreq + (maxDetune * Math.sin(step * lfoSpeed));
+                        this.engine.channels[0].osc.frequency.setValueAtTime(slurredFreq, stepTime);
+                    }
+                }
+            }
+
+            // Move pointer forward
+            timeOffset += duration;
+        });
+    }
+}
+```
+
+--- PATH: doc/drinking-games-ui-lobby.md ---
+# Detail-Spezifikation: Start-Bildschirm & Lobby-Registrierung
+
+Dieses Dokument definiert das Benutzeroberflächen-Konzept (UI), den Ladebildschirm, den Start-Bildschirm und das Registrierungssystem (Lobby) für bis zu 8 Spieler unter Einhaltung des klassischen Atari ST 16-Farben-Videomodus [1534].
+
+---
+
+## 1. Der Start-Bildschirm (Start Screen)
+
+Der Start-Bildschirm zieht den Spieler direkt in eine authentische Retro-Atmosphäre der späten 1980er Jahre.
+
+```
++-----------------------------------------------------------+
+|  [================== COPPERBARS ACTIVE =================] |
+|                                                           |
+|             _----_      _                      _          |
+|            |      \    (_)                    | |         |
+|            |  |--  |    _  _ _- -_ _ _ _- -_  | |  _ _    |
+|            |  |--  |   | ||  _ _  | |  _ _  | | | | _ |   |
+|            |______/    |_||_|   |_|_|_|   |_|_|_| |___|   |
+|                                                           |
+|                  -  D R I N K I N G  -                    |
+|                      G A M E S                            |
+|                                                           |
+|  -> PRESS START BUTTON / CLICK TO REGISTER NEW PLAYERS    |
+|                                                           |
+|                (C) 1988 BY GEMINI SOFT                    |
++-----------------------------------------------------------+
+```
+
+### Technische & Visuelle Highlights (Atari ST Style)
+
+*   **Copperbars (Raster-Verläufe):**
+    Im Hintergrund des Bildschirms bewegen sich dicke, weich verlaufende horizontale Farbbalken (Copperbars) von oben nach unten. Da der Atari ST standardmäßig nur 16 Farben gleichzeitig darstellen kann, manipulieren wir die Farbpalette direkt pro horizontaler Bildschirmzeile (Scanline) im Frame-Buffer über einen virtuellen **Raster-Interrupt**-Timer [1534].
+*   **Chiptune-Intro-Theme:**
+    Beim Laden des Start-Bildschirms wird eine eingängige 4-Spur-Intro-Melodie im `.mod`-Format abgespielt, die über die `ChiptuneAudioEngine` (mittels WebAudio API) synthetisiert wird [26, 1486].
+*   **Start-Auslöser (Universal Input Trigger):**
+    Der Bildschirm wartet auf eine beliebige Eingabe:
+    *   **Tastatur:** Drücken der `Leertaste` oder `Enter`
+    *   **Touch:** Tippen auf eine beliebige Stelle des Bildschirms (Viewport)
+    *   **Gamepad:** Drücken eines beliebigen Action-Buttons (z.B. Button 0)
+
+---
+
+## 2. Spieler-Registrierung & Lobby (Lobby Screen)
+
+Nach dem Start gelangt die Party-Gruppe in die Lobby. Das Spiel ist als **sequentielles Party-Spiel (Pass-and-Play)** für **1 bis maximal 8 Spieler** konzipiert [36, 1522].
+
+```
++-----------------------------------------------------------+
+|                    SPIELER-REGISTRIERUNG                  |
++-----------------------------------------------------------+
+|                                                           |
+|  Spieler 1: [ MAX ]           Sponsor: [ Stout Brewery ]  |
+|  Spieler 2: [ ANNA ]          Sponsor: [ Green Garden  ]  |
+|  Spieler 3: [ ---- ]          Sponsor: [ ------------- ]  |
+|                                                           |
+|  -> NAME EINGEBEN: _                                      |
+|  -> SPONSOR WÄHLEN (Links/Rechts)                         |
+|                                                           |
+|  [START]  Um das Turnier mit 2 Spielern zu starten!        |
++-----------------------------------------------------------+
+```
+
+### Interaktions- & Animationsablauf
+
+1.  **Namenseingabe:**
+    *   Spieler geben nacheinander ihren Namen über eine virtuelle On-Screen-Tastatur (für Touch/Gamepad) oder direkt über die physikalische Tastatur ein (max. 10 Zeichen).
+2.  **Sponsoren-Auswahl & Dynamisches Color-Swapping:**
+    *   Beim Scrollen durch die Sponsoren-Liste wird die Farbpalette der UI in Echtzeit ausgetauscht (*Palette-Swapping*). Wählt Spieler 1 *Green Garden*, leuchtet der Bildschirm augenblicklich in saftigen Grüntönen. Wechselt er zu *Stout Brewery*, färbt sich die Oberfläche in dunklem Holz- und Bernstein-Braun [1534].
+3.  **Hymnen-Anspielung:**
+    *   Sobald ein Spieler auf einem Sponsor verweilt, lädt die Chiptune-Audio-Engine den jeweiligen Song und spielt ein kurzes, prägnantes **5-Sekunden-Intro-Sample** der Nationalhymne des Sponsors ab [26].
+4.  **Spieler hinzufügen:**
+    *   Nach Bestätigung des Sponsors wird der Spieler in die Liste eingetragen, und Spieler 2 ist an der Reihe. Der gesamte Prozess wird wiederholt, bis alle Spieler registriert sind und das Turnier über den Start-Button freigegeben wird.
+
+---
+
+## 3. Die universelle Eingabeschicht (`UnifiedInputController.js`)
+
+Um eine nahtlose Unterstützung aller Endgeräte (Smartphones, Desktop-PCs, Tablets, Konsolen-Browser) zu gewährleisten, mappt der Controller alle physischen Steuerungssignale auf einheitliche virtuelle Signale.
+
+```javascript
+/**
+ * UnifiedInputController zur Vereinheitlichung von Touch, Tastatur und Gamepad.
+ */
+class UnifiedInputController {
+    constructor() {
+        this.inputState = {
+            BUTTON_A: false, // Virtueller Button Links (Mashing 1 / Balance Links / etc.)
+            BUTTON_B: false, // Virtueller Button Rechts (Mashing 2 / Balance Rechts / etc.)
+            START: false     // Virtueller Start-Button (Lobby / Menü)
+        };
+        this.initListeners();
+    }
+
+    initListeners() {
+        // 1. TASTATUR-MAPPING
+        window.addEventListener("keydown", (e) => {
+            if (e.key === "ArrowLeft" || e.key === "a" || e.key === "A") this.inputState.BUTTON_A = true;
+            if (e.key === "ArrowRight" || e.key === "d" || e.key === "D") this.inputState.BUTTON_B = true;
+            if (e.key === "Enter" || e.key === " ") this.inputState.START = true;
+        });
+
+        window.addEventListener("keyup", (e) => {
+            if (e.key === "ArrowLeft" || e.key === "a" || e.key === "A") this.inputState.BUTTON_A = false;
+            if (e.key === "ArrowRight" || e.key === "d" || e.key === "D") this.inputState.BUTTON_B = false;
+            if (e.key === "Enter" || e.key === " ") this.inputState.START = false;
+        });
+
+        // 2. TOUCH-MAPPING (Zweiteilung des Bildschirms für bequemes Spielen mit Daumen)
+        window.addEventListener("touchstart", (e) => {
+            const touchX = e.touches[0].clientX;
+            const screenWidth = window.innerWidth;
+
+            if (touchX < screenWidth / 2) {
+                this.inputState.BUTTON_A = true;
+            } else {
+                this.inputState.BUTTON_B = true;
+            }
+        });
+
+        window.addEventListener("touchend", () => {
+            // Vereinfachtes Zurücksetzen aller Buttons bei Touch-Ende
+            this.inputState.BUTTON_A = false;
+            this.inputState.BUTTON_B = false;
+        });
+
+        // 3. GAMEPAD-MAPPING (HTML5 Gamepad API Polling)
+        this.startGamepadPolling();
+    }
+
+    startGamepadPolling() {
+        setInterval(() => {
+            const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
+            const gp = gamepads[0]; // Nutze das erste angeschlossene Gamepad
+
+            if (gp) {
+                // Mapping: Steuerkreuz Links oder Button X/A -> BUTTON_A
+                this.inputState.BUTTON_A = gp.buttons[14].pressed || gp.buttons[0].pressed;
+                // Mapping: Steuerkreuz Rechts oder Button Y/B -> BUTTON_B
+                this.inputState.BUTTON_B = gp.buttons[15].pressed || gp.buttons[1].pressed;
+                // Mapping: Options/Start -> START
+                this.inputState.START = gp.buttons[9].pressed;
+            }
+        }, 16); // Polling im Takt von 60 FPS
+    }
+
+    /**
+     * Gibt den aktuellen Eingabezustand zurück
+     */
+    getState() {
+        return { ...this.inputState };
+    }
+}
+```
+
+--- PATH: doc/sponsors.json ---
+{
+  "sponsors": [
+    {
+      "id": "grinness",
+      "name": "Grinness",
+      "original_inspiration": "Guinness",
+      "drink_type": "Irish Stout",
+      "theme_color": "#111",
+      "atari_palette_9bit": [
+        "000", "111", "222", "333", "443", "554", "760", "650",
+        "540", "321", "777", "fff", "123", "012", "000", "000"
+      ],
+      "modern_hex_palette": [
+        "#000000", "#242424", "#494949", "#6d6d6d", "#92926d", "#b6b692", "#fcda00", "#dbb600",
+        "#b69200", "#6d4924", "#fcfcfc", "#ffffff", "#24496d", "#002449", "#000000", "#000000"
+      ],
+      "flag": {
+        "primary_color": "#111",
+        "secondary_color": "#760",
+        "border_color": "#fff",
+        "logo_symbol": "lute",
+        "logo_description": "Asymmetrical wooden retro-lute replacing the harp"
+      },
+      "chiptune_anthem": {
+        "tempo_bpm": 105,
+        "ym2149_channels": {
+          "channel_A": [
+            {"note": "D4", "duration": 0.5},
+            {"note": "F4", "duration": 0.5},
+            {"note": "A4", "duration": 1.0},
+            {"note": "A4", "duration": 0.5},
+            {"note": "G4", "duration": 0.5},
+            {"note": "F4", "duration": 1.0},
+            {"note": "D4", "duration": 1.0}
+          ],
+          "channel_B": [
+            {"note": "D3", "duration": 1.0},
+            {"note": "F3", "duration": 1.0},
+            {"note": "C3", "duration": 1.0},
+            {"note": "D3", "duration": 1.0}
+          ],
+          "channel_C": [
+            {"note": "A3", "duration": 0.5},
+            {"note": "D4", "duration": 0.5},
+            {"note": "F4", "duration": 1.0},
+            {"note": "E4", "duration": 1.0},
+            {"note": "A3", "duration": 1.0}
+          ]
+        }
+      }
+    },
+    {
+      "id": "heineklon",
+      "name": "Heineklon",
+      "original_inspiration": "Heineken",
+      "drink_type": "Dutch Lager",
+      "theme_color": "#062",
+      "atari_palette_9bit": [
+        "000", "051", "072", "700", "fff", "777", "555", "333",
+        "222", "111", "031", "042", "722", "411", "020", "000"
+      ],
+      "modern_hex_palette": [
+        "#000000", "#00b624", "#00fc49", "#fc0000", "#ffffff", "#fcfcfc", "#b6b6b6", "#6d6d6d",
+        "#494949", "#242424", "#006d24", "#009249", "#fc4949", "#922424", "#004900", "#000000"
+      ],
+      "flag": {
+        "primary_color": "#051",
+        "secondary_color": "#fff",
+        "border_color": "#700",
+        "logo_symbol": "asterisk",
+        "logo_description": "Asymmetrical red 8-bit asterisk (*), legally replacing the red star"
+      },
+      "chiptune_anthem": {
+        "tempo_bpm": 120,
+        "ym2149_channels": {
+          "channel_A": [
+            {"note": "C4", "duration": 0.5},
+            {"note": "E4", "duration": 0.5},
+            {"note": "G4", "duration": 0.5},
+            {"note": "E4", "duration": 0.5},
+            {"note": "C5", "duration": 1.0},
+            {"note": "G4", "duration": 1.0}
+          ],
+          "channel_B": [
+            {"note": "C3", "duration": 1.0},
+            {"note": "G3", "duration": 1.0},
+            {"note": "E3", "duration": 1.0},
+            {"note": "C3", "duration": 1.0}
+          ],
+          "channel_C": [
+            {"note": "G3", "duration": 0.5},
+            {"note": "C4", "duration": 0.5},
+            {"note": "E4", "duration": 1.0},
+            {"note": "C4", "duration": 1.0},
+            {"note": "E3", "duration": 1.0}
+          ]
+        }
+      }
+    },
+    {
+      "id": "jaegerkleister",
+      "name": "Jägerkleister",
+      "original_inspiration": "Jägermeister",
+      "drink_type": "Kräuterlikör",
+      "theme_color": "#130",
+      "atari_palette_9bit": [
+        "000", "130", "240", "730", "750", "fff", "777", "555",
+        "221", "110", "351", "020", "620", "410", "120", "000"
+      ],
+      "modern_hex_palette": [
+        "#000000", "#246d00", "#499200", "#fc6d00", "#fcb600", "#ffffff", "#fcfcfc", "#b6b6b6",
+        "#494924", "#242400", "#6db624", "#004900", "#db4900", "#922400", "#244900", "#000000"
+      ],
+      "flag": {
+        "primary_color": "#130",
+        "secondary_color": "#730",
+        "border_color": "#fff",
+        "logo_symbol": "cross_eyed_elk",
+        "logo_description": "Derpy, cross-eyed pixel-art elk balancing a foaming beer mug in its antlers"
+      },
+      "chiptune_anthem": {
+        "tempo_bpm": 110,
+        "ym2149_channels": {
+          "channel_A": [
+            {"note": "G3", "duration": 0.5},
+            {"note": "C4", "duration": 0.5},
+            {"note": "E4", "duration": 0.5},
+            {"note": "G4", "duration": 1.5},
+            {"note": "F4", "duration": 0.5},
+            {"note": "E4", "duration": 0.5},
+            {"note": "D4", "duration": 1.0}
+          ],
+          "channel_B": [
+            {"note": "C3", "duration": 1.5},
+            {"note": "E3", "duration": 0.5},
+            {"note": "G3", "duration": 1.0},
+            {"note": "G2", "duration": 1.0}
+          ],
+          "channel_C": [
+            {"note": "E3", "duration": 1.0},
+            {"note": "G3", "duration": 1.0},
+            {"note": "C4", "duration": 1.0},
+            {"note": "B3", "duration": 1.0}
+          ]
+        }
+      }
+    },
+    {
+      "id": "mack_damions_no8",
+      "name": "Mack Damion's Old No. 8",
+      "original_inspiration": "Jack Daniel's",
+      "drink_type": "Tennessee Whiskey",
+      "theme_color": "#000",
+      "atari_palette_9bit": [
+        "000", "111", "222", "333", "fff", "777", "555", "444",
+        "654", "432", "321", "211", "765", "100", "000", "000"
+      ],
+      "modern_hex_palette": [
+        "#000000", "#242424", "#494949", "#6d6d6d", "#ffffff", "#fcfcfc", "#b6b6b6", "#929292",
+        "#dbb692", "#926d49", "#6d4924", "#492424", "#fcdb6d", "#240000", "#000000", "#000000"
+      ],
+      "flag": {
+        "primary_color": "#000",
+        "secondary_color": "#fff",
+        "border_color": "#444",
+        "logo_symbol": "oak_barrel",
+        "logo_description": "Rustic, hand-drawn pixel-art whiskey barrel with 'Old No. 8 Sour Mash' carving"
+      },
+      "chiptune_anthem": {
+        "tempo_bpm": 90,
+        "ym2149_channels": {
+          "channel_A": [
+            {"note": "A3", "duration": 0.5},
+            {"note": "C4", "duration": 0.5},
+            {"note": "D4", "duration": 0.5},
+            {"note": "D#4", "duration": 0.25},
+            {"note": "E4", "duration": 0.75},
+            {"note": "G4", "duration": 0.5},
+            {"note": "A4", "duration": 1.5}
+          ],
+          "channel_B": [
+            {"note": "A2", "duration": 1.0},
+            {"note": "E3", "duration": 1.0},
+            {"note": "G3", "duration": 1.0},
+            {"note": "A3", "duration": 1.0}
+          ],
+          "channel_C": [
+            {"note": "C3", "duration": 0.5},
+            {"note": "E3", "duration": 0.5},
+            {"note": "G3", "duration": 1.0},
+            {"note": "E3", "duration": 1.0},
+            {"note": "C3", "duration": 1.0}
+          ]
+        }
+      }
+    },
+    {
+      "id": "caronas_extra",
+      "name": "Caronas Extra",
+      "original_inspiration": "Corona Extra",
+      "drink_type": "Mexican Cerveza",
+      "theme_color": "#036",
+      "atari_palette_9bit": [
+        "000", "025", "047", "760", "750", "fff", "777", "070",
+        "257", "135", "773", "551", "660", "012", "000", "000"
+      ],
+      "modern_hex_palette": [
+        "#000000", "#0049b6", "#0092fc", "#fcda00", "#fcb600", "#ffffff", "#fcfcfc", "#00fc00",
+        "#4992fc", "#246db6", "#fcfcdb", "#b6b624", "#dbdb00", "#002449", "#000000", "#000000"
+      ],
+      "flag": {
+        "primary_color": "#047",
+        "secondary_color": "#760",
+        "border_color": "#fff",
+        "logo_symbol": "paper_crown",
+        "logo_description": "Wobbly paper birthday crown with a neon-lime pixel slice skewered on top"
+      },
+      "chiptune_anthem": {
+        "tempo_bpm": 130,
+        "ym2149_channels": {
+          "channel_A": [
+            {"note": "E4", "duration": 0.5},
+            {"note": "G#4", "duration": 0.5},
+            {"note": "B4", "duration": 0.5},
+            {"note": "E5", "duration": 1.0},
+            {"note": "D#5", "duration": 0.5},
+            {"note": "C#5", "duration": 1.0}
+          ],
+          "channel_B": [
+            {"note": "E3", "duration": 1.0},
+            {"note": "B3", "duration": 1.0},
+            {"note": "G#3", "duration": 1.0},
+            {"note": "E3", "duration": 1.0}
+          ],
+          "channel_C": [
+            {"note": "B3", "duration": 0.5},
+            {"note": "E4", "duration": 0.5},
+            {"note": "G#4", "duration": 1.0},
+            {"note": "E4", "duration": 1.0},
+            {"note": "B3", "duration": 1.0}
+          ]
+        }
+      }
+    },
+    {
+      "id": "budweicher",
+      "name": "Budweicher",
+      "original_inspiration": "Budweiser",
+      "drink_type": "American Light Lager",
+      "theme_color": "#700",
+      "atari_palette_9bit": [
+        "000", "700", "500", "fff", "007", "004", "777", "555",
+        "755", "533", "311", "100", "722", "211", "000", "000"
+      ],
+      "modern_hex_palette": [
+        "#000000", "#fc0000", "#b60000", "#ffffff", "#0000fc", "#000092", "#fcfcfc", "#b6b6b6",
+        "#fcb6b6", "#b66d6d", "#6d2424", "#240000", "#fc4949", "#492424", "#000000", "#000000"
+      ],
+      "flag": {
+        "primary_color": "#700",
+        "secondary_color": "#fff",
+        "border_color": "#007",
+        "logo_symbol": "drooping_bowtie",
+        "logo_description": "A cartoon bowtie drooping in the middle, engraved with an ear of barley"
+      },
+      "chiptune_anthem": {
+        "tempo_bpm": 125,
+        "ym2149_channels": {
+          "channel_A": [
+            {"note": "C4", "duration": 0.5},
+            {"note": "C4", "duration": 0.5},
+            {"note": "G4", "duration": 0.5},
+            {"note": "G4", "duration": 0.5},
+            {"note": "A4", "duration": 0.5},
+            {"note": "A4", "duration": 0.5},
+            {"note": "G4", "duration": 1.0}
+          ],
+          "channel_B": [
+            {"note": "C3", "duration": 1.0},
+            {"note": "E3", "duration": 1.0},
+            {"note": "F3", "duration": 1.0},
+            {"note": "C3", "duration": 1.0}
+          ],
+          "channel_C": [
+            {"note": "E3", "duration": 0.5},
+            {"note": "G3", "duration": 0.5},
+            {"note": "C4", "duration": 1.0},
+            {"note": "E4", "duration": 1.0},
+            {"note": "G4", "duration": 1.0}
+          ]
+        }
+      }
+    },
+    {
+      "id": "schmirnoffski",
+      "name": "Schmirnoffski",
+      "original_inspiration": "Smirnoff",
+      "drink_type": "Red Label Vodka",
+      "theme_color": "#500",
+      "atari_palette_9bit": [
+        "000", "700", "500", "777", "fff", "444", "333", "222",
+        "111", "733", "522", "666", "100", "000", "000", "000"
+      ],
+      "modern_hex_palette": [
+        "#000000", "#fc0000", "#b60000", "#fcfcfc", "#ffffff", "#929292", "#6d6d6d", "#494949",
+        "#242424", "#fc6d6d", "#b64949", "#dbdbdb", "#240000", "#000000", "#000000", "#000000"
+      ],
+      "flag": {
+        "primary_color": "#700",
+        "secondary_color": "#777",
+        "border_color": "#fff",
+        "logo_symbol": "triple_glass",
+        "logo_description": "Triple-distilled pixel-art shot glass with an ice block inside"
+      },
+      "chiptune_anthem": {
+        "tempo_bpm": 100,
+        "ym2149_channels": {
+          "channel_A": [
+            {"note": "A4", "duration": 0.5},
+            {"note": "B4", "duration": 0.5},
+            {"note": "C5", "duration": 1.0},
+            {"note": "B4", "duration": 0.5},
+            {"note": "A4", "duration": 0.5},
+            {"note": "G#4", "duration": 1.0},
+            {"note": "E4", "duration": 1.0}
+          ],
+          "channel_B": [
+            {"note": "A2", "duration": 1.0},
+            {"note": "C3", "duration": 1.0},
+            {"note": "E3", "duration": 1.0},
+            {"note": "E2", "duration": 1.0}
+          ],
+          "channel_C": [
+            {"note": "E3", "duration": 0.5},
+            {"note": "A3", "duration": 0.5},
+            {"note": "C4", "duration": 1.0},
+            {"note": "B3", "duration": 1.0},
+            {"note": "A3", "duration": 1.0}
+          ]
+        }
+      }
+    }
+  ]
+}

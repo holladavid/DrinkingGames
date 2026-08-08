@@ -1,0 +1,27 @@
+{
+  "name": "retro-drinking-games",
+  "version": "1.0.0",
+  "description": "Atari ST-style turn-based party drinking game",
+  "main": "index.html",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "prepare": "husky install"
+  },
+  "keywords": [
+    "atari-st",
+    "chiptune",
+    "web-audio-api",
+    "pixel-art",
+    "retro-game"
+  ],
+  "author": "Gemini Notebook Team",
+  "license": "MIT",
+  "devDependencies": {
+    "eslint": "^8.50.0",
+    "husky": "^8.0.3",
+    "vite": "^5.0.0"
+  }
+}
