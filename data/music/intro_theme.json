@@ -1,0 +1,38 @@
+{
+  "id": "intro_theme",
+  "title": "Atari ST Olympic Fanfare & Party Theme",
+  "tempo_bpm": 125,
+  "loop": true,
+  "ym2149_channels": {
+    "channel_A": [
+      {"note": "C4", "duration": 0.5},
+      {"note": "E4", "duration": 0.5},
+      {"note": "G4", "duration": 0.5},
+      {"note": "C5", "duration": 1.0},
+      {"note": "G4", "duration": 0.5},
+      {"note": "E4", "duration": 0.5},
+      {"note": "F4", "duration": 0.5},
+      {"note": "A4", "duration": 1.0},
+      {"note": "G4", "duration": 0.5},
+      {"note": "E4", "duration": 0.5},
+      {"note": "D4", "duration": 0.5},
+      {"note": "C4", "duration": 1.5}
+    ],
+    "channel_B": [
+      {"note": "G3", "duration": 1.0},
+      {"note": "C4", "duration": 1.0},
+      {"note": "E4", "duration": 1.0},
+      {"note": "C4", "duration": 1.0},
+      {"note": "D4", "duration": 1.0},
+      {"note": "F4", "duration": 1.0},
+      {"note": "E4", "duration": 1.0},
+      {"note": "G3", "duration": 1.0}
+    ],
+    "channel_C": [
+      {"note": "C3", "duration": 2.0},
+      {"note": "E3", "duration": 2.0},
+      {"note": "F3", "duration": 2.0},
+      {"note": "C3", "duration": 2.0}
+    ]
+  }
+}

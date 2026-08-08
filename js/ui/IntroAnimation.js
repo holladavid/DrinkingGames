@@ -17,13 +17,18 @@ export default class IntroAnimation {
         this.runnerY = 142;
     }
 
-    reset() {
+    reset(introMusicAsset) {
         this.timer = 0;
         this.isFinished = false;
         this.fanfarePlayed = false;
         this.runnerX = -30;
-        this.runnerY = 142;
+        this.runnerY = 132;
         this.particles = [];
+
+        // Play preloaded Intro Track JSON Asset!
+        if (introMusicAsset) {
+            this.musicPlayer.playTrack(introMusicAsset, 0.0);
+        }
     }
 
     update(dt, input) {

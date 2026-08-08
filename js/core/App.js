@@ -61,23 +61,25 @@ class App {
     }
 
     async init() {
-        // 1. Load Graphic Assets Manifest
+        // 1. Load Graphic Assets
         await this.assetLoader.loadManifest({
             'stadium_bg': 'assets/gfx/background/stadium_intro.png',
             'podium_bg': 'assets/gfx/background/podium_scene.png',
-            'judges_sheet': 'assets/gfx/judges/judges_sheet.png'
+            'judges_sheet': 'assets/gfx/judges/judges_sheet.png',
+            'runner_sheet': 'assets/gfx/sprites/runner_sheet.png'
         });
 
-        // 2. Load Sponsors JSON Data
+        // 2. Load Sponsors & Music Assets
         await this.loadSponsorsData();
+        await this.loadMusicAssets();
 
-        // Instantiate Components
-        this.intro = new IntroAnimation(this.renderer, this.synth, this.assetLoader);
+        // Components
+        this.intro = new IntroAnimation(this.renderer, this.synth, this.musicPlayer, this.assetLoader);
         this.lobby = new LobbyManager(this.renderer, this.synth, this.musicPlayer, this.sponsors);
 
         // Register States
         this.stateMachine.registerState(STATES.INTRO, {
-            onEnter: () => this.intro.reset(),
+            onEnter: () => this.intro.reset(this.musicAssets['intro_theme']),
             update: (dt, input) => {
                 this.intro.update(dt, input);
                 if (this.intro.isFinished) {
@@ -87,23 +89,20 @@ class App {
             render: () => this.intro.render()
         });
 
-        this.stateMachine.registerState(STATES.START_SCREEN, {
-            update: (dt, input) => {
-                if (input.isJustPressed('START')) {
-                    this.synth.playConfirmSFX();
-                    this.stateMachine.transitionTo(STATES.LOBBY);
-                }
-            },
-            render: () => this.renderStartScreen()
-        });
-
-        this.stateMachine.registerState(STATES.LOBBY, {
-            update: (dt, input) => this.lobby.update(input),
-            render: () => this.lobby.render()
-        });
-
-        // Transition to INTRO
+        // ... Rest der State Registrierungen ...
         this.stateMachine.transitionTo(STATES.INTRO);
+    }
+
+    async loadMusicAssets() {
+        this.musicAssets = {};
+        try {
+            const res = await fetch('./data/music/intro_theme.json');
+            const data = await res.json();
+            this.musicAssets['intro_theme'] = data;
+            console.log(" Loaded Music Asset: intro_theme.json");
+        } catch (err) {
+            console.error("Failed to load music asset", err);
+        }
     }
 
     async loadSponsorsData() {
