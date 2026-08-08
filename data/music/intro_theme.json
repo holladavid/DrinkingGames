@@ -1,52 +1,60 @@
 {
   "id": "intro_theme",
-  "title": "What Shall We Do with a Drunken Sailor",
-  "tempo_bpm": 130,
+  "title": "Drunken Sailor (Demoscene Mix)",
+  "tempo_bpm": 140,
   "loop": true,
+  "total_beats": 32,
   "lyrics": [
-    {
-      "start": 0.0,
-      "end": 8.0,
-      "line1": "WHAT SHALL WE DO WITH A DRUNKEN SAILOR?",
-      "line2": "EARLY IN THE MORNING?"
-    },
-    {
-      "start": 8.0,
-      "end": 16.0,
-      "line1": "WAY-HAY AND UP SHE RISES!",
-      "line2": "EARLY IN THE MORNING!"
-    },
-    {
-      "start": 16.0,
-      "end": 24.0,
-      "line1": "PUT HIM IN THE LONGBOAT TILL HE'S SOBER!",
-      "line2": "EARLY IN THE MORNING!"
-    }
+    { "startBeat": 0, "endBeat": 8, "line1": "WHAT SHALL WE DO WITH A", "line2": "DRUNKEN SAILOR?" },
+    { "startBeat": 8, "endBeat": 16, "line1": "WHAT SHALL WE DO WITH A", "line2": "DRUNKEN SAILOR?" },
+    { "startBeat": 16, "endBeat": 24, "line1": "WHAT SHALL WE DO WITH A", "line2": "DRUNKEN SAILOR?" },
+    { "startBeat": 24, "endBeat": 32, "line1": "EAR-LY IN THE", "line2": "MORN-ING!" }
   ],
   "ym2149_channels": {
-    "channel_A": [
-      {"note": "A4", "duration": 0.5}, {"note": "A4", "duration": 0.5}, {"note": "A4", "duration": 0.5}, {"note": "A4", "duration": 0.5},
-      {"note": "A4", "duration": 0.5}, {"note": "F4", "duration": 0.5}, {"note": "A4", "duration": 1.0},
-      {"note": "G4", "duration": 0.5}, {"note": "G4", "duration": 0.5}, {"note": "G4", "duration": 0.5}, {"note": "G4", "duration": 0.5},
-      {"note": "G4", "duration": 0.5}, {"note": "E4", "duration": 0.5}, {"note": "G4", "duration": 1.0},
-      {"note": "A4", "duration": 0.5}, {"note": "A4", "duration": 0.5}, {"note": "A4", "duration": 0.5}, {"note": "A4", "duration": 0.5},
-      {"note": "B4", "duration": 0.5}, {"note": "C5", "duration": 0.5}, {"note": "D5", "duration": 1.0},
-      {"note": "C5", "duration": 0.5}, {"note": "A4", "duration": 0.5}, {"note": "G4", "duration": 0.5}, {"note": "E4", "duration": 0.5},
-      {"note": "D4", "duration": 2.0}
-    ],
-    "channel_B": [
-      {"note": "F4", "duration": 1.0}, {"note": "F4", "duration": 1.0}, {"note": "F4", "duration": 1.0}, {"note": "D4", "duration": 1.0},
-      {"note": "E4", "duration": 1.0}, {"note": "E4", "duration": 1.0}, {"note": "E4", "duration": 1.0}, {"note": "C4", "duration": 1.0},
-      {"note": "F4", "duration": 1.0}, {"note": "F4", "duration": 1.0}, {"note": "G4", "duration": 1.0}, {"note": "A4", "duration": 1.0},
-      {"note": "A4", "duration": 0.5}, {"note": "F4", "duration": 0.5}, {"note": "E4", "duration": 0.5}, {"note": "C4", "duration": 0.5},
-      {"note": "D4", "duration": 2.0}
-    ],
-    "channel_C": [
-      {"note": "D3", "duration": 1.0}, {"note": "D3", "duration": 1.0}, {"note": "D3", "duration": 1.0}, {"note": "A2", "duration": 1.0},
-      {"note": "C3", "duration": 1.0}, {"note": "C3", "duration": 1.0}, {"note": "C3", "duration": 1.0}, {"note": "G2", "duration": 1.0},
-      {"note": "D3", "duration": 1.0}, {"note": "D3", "duration": 1.0}, {"note": "D3", "duration": 1.0}, {"note": "F3", "duration": 1.0},
-      {"note": "F3", "duration": 0.5}, {"note": "D3", "duration": 0.5}, {"note": "C3", "duration": 0.5}, {"note": "A2", "duration": 0.5},
-      {"note": "D3", "duration": 2.0}
-    ]
+    "channel_A": {
+      "instrument": "lead",
+      "volume": 0.22,
+      "track": [
+        {"note": "A4", "duration": 1.0}, {"note": "A4", "duration": 0.5}, {"note": "A4", "duration": 0.5}, {"note": "A4", "duration": 1.0}, {"note": "A4", "duration": 1.0},
+        {"note": "A4", "duration": 1.0}, {"note": "D4", "duration": 1.0}, {"note": "A4", "duration": 2.0},
+        {"note": "G4", "duration": 1.0}, {"note": "G4", "duration": 0.5}, {"note": "G4", "duration": 0.5}, {"note": "G4", "duration": 1.0}, {"note": "G4", "duration": 1.0},
+        {"note": "G4", "duration": 1.0}, {"note": "C4", "duration": 1.0}, {"note": "G4", "duration": 2.0},
+        {"note": "A4", "duration": 1.0}, {"note": "A4", "duration": 0.5}, {"note": "A4", "duration": 0.5}, {"note": "A4", "duration": 1.0}, {"note": "A4", "duration": 1.0},
+        {"note": "B4", "duration": 1.0}, {"note": "C5", "duration": 1.0}, {"note": "D5", "duration": 2.0},
+        {"note": "C5", "duration": 1.0}, {"note": "A4", "duration": 1.0}, {"note": "G4", "duration": 1.0}, {"note": "E4", "duration": 1.0},
+        {"note": "D4", "duration": 2.0}, {"note": "REST", "duration": 2.0}
+      ]
+    },
+    "channel_B": {
+      "instrument": "lead",
+      "volume": 0.15,
+      "track": [
+        {"note": "F4", "duration": 0.5}, {"note": "E4", "duration": 0.5}, {"note": "C4", "duration": 1.0, "inst": "drum"}, {"note": "F4", "duration": 0.5}, {"note": "E4", "duration": 0.5}, {"note": "C4", "duration": 1.0, "inst": "drum"},
+        {"note": "F4", "duration": 0.5}, {"note": "E4", "duration": 0.5}, {"note": "C4", "duration": 1.0, "inst": "drum"}, {"note": "A4", "duration": 2.0},
+        {"note": "E4", "duration": 0.5}, {"note": "D4", "duration": 0.5}, {"note": "C3", "duration": 1.0, "inst": "drum"}, {"note": "E4", "duration": 0.5}, {"note": "D4", "duration": 0.5}, {"note": "C3", "duration": 1.0, "inst": "drum"},
+        {"note": "E4", "duration": 0.5}, {"note": "D4", "duration": 0.5}, {"note": "C3", "duration": 1.0, "inst": "drum"}, {"note": "G4", "duration": 2.0},
+        {"note": "F4", "duration": 0.5}, {"note": "E4", "duration": 0.5}, {"note": "C4", "duration": 1.0, "inst": "drum"}, {"note": "F4", "duration": 0.5}, {"note": "E4", "duration": 0.5}, {"note": "C4", "duration": 1.0, "inst": "drum"},
+        {"note": "G4", "duration": 1.0}, {"note": "A4", "duration": 1.0}, {"note": "B4", "duration": 2.0},
+        {"note": "A4", "duration": 1.0}, {"note": "F4", "duration": 1.0}, {"note": "E4", "duration": 1.0}, {"note": "C4", "duration": 1.0},
+        {"note": "D4", "duration": 2.0}, {"note": "C3", "duration": 2.0, "inst": "drum"}
+      ]
+    },
+    "channel_C": {
+      "instrument": "bass",
+      "volume": 0.28,
+      "track": [
+        {"note": "D3", "duration": 0.5}, {"note": "D4", "duration": 0.5}, {"note": "D3", "duration": 0.5}, {"note": "D4", "duration": 0.5}, {"note": "D3", "duration": 0.5}, {"note": "D4", "duration": 0.5}, {"note": "D3", "duration": 0.5}, {"note": "D4", "duration": 0.5},
+        {"note": "D3", "duration": 0.5}, {"note": "D4", "duration": 0.5}, {"note": "D3", "duration": 0.5}, {"note": "D4", "duration": 0.5}, {"note": "D3", "duration": 0.5}, {"note": "D4", "duration": 0.5}, {"note": "D3", "duration": 0.5}, {"note": "D4", "duration": 0.5},
+        
+        {"note": "C3", "duration": 0.5}, {"note": "C4", "duration": 0.5}, {"note": "C3", "duration": 0.5}, {"note": "C4", "duration": 0.5}, {"note": "C3", "duration": 0.5}, {"note": "C4", "duration": 0.5}, {"note": "C3", "duration": 0.5}, {"note": "C4", "duration": 0.5},
+        {"note": "C3", "duration": 0.5}, {"note": "C4", "duration": 0.5}, {"note": "C3", "duration": 0.5}, {"note": "C4", "duration": 0.5}, {"note": "C3", "duration": 0.5}, {"note": "C4", "duration": 0.5}, {"note": "C3", "duration": 0.5}, {"note": "C4", "duration": 0.5},
+        
+        {"note": "D3", "duration": 0.5}, {"note": "D4", "duration": 0.5}, {"note": "D3", "duration": 0.5}, {"note": "D4", "duration": 0.5}, {"note": "D3", "duration": 0.5}, {"note": "D4", "duration": 0.5}, {"note": "D3", "duration": 0.5}, {"note": "D4", "duration": 0.5},
+        {"note": "G2", "duration": 0.5}, {"note": "G3", "duration": 0.5}, {"note": "A2", "duration": 0.5}, {"note": "A3", "duration": 0.5}, {"note": "B2", "duration": 0.5}, {"note": "B3", "duration": 0.5}, {"note": "G2", "duration": 0.5}, {"note": "G3", "duration": 0.5},
+        
+        {"note": "C3", "duration": 0.5}, {"note": "A2", "duration": 0.5}, {"note": "G2", "duration": 0.5}, {"note": "E2", "duration": 0.5}, {"note": "C3", "duration": 0.5}, {"note": "A2", "duration": 0.5}, {"note": "G2", "duration": 0.5}, {"note": "E2", "duration": 0.5},
+        {"note": "D3", "duration": 1.0}, {"note": "D2", "duration": 1.0}, {"note": "D3", "duration": 2.0}
+      ]
+    }
   }
 }

@@ -1,6 +1,6 @@
 /**
- * Chiptune Tracker Music Player
- * Plays polyphonic 3-channel YM2149 tracks from JSON music assets with optional looping and drunkenness pitch/speed bending.
+ * Precision Chiptune Tracker Engine
+ * Parses JSON tracks, applies instruments, and provides exact Beat-Sync for UI Karaoke.
  */
 export default class MusicPlayer {
     constructor(synth) {
@@ -8,11 +8,13 @@ export default class MusicPlayer {
         this.isPlaying = false;
         this.isLooping = false;
         this.activeTimeouts = [];
+        
+        // Timing sync variables
+        this.startTime = 0;
+        this.secondsPerBeat = 0;
+        this.totalLoopBeats = 32;
     }
 
-    /**
-     * Stops current track playback immediately
-     */
     stop() {
         this.isPlaying = false;
         this.isLooping = false;
@@ -21,10 +23,14 @@ export default class MusicPlayer {
     }
 
     /**
-     * Plays any JSON Music Asset (3-channel YM2149 Track)
-     * @param {Object} trackData - Parsed JSON music asset
-     * @param {number} bac - Promillewert (0.0 to 3.5‰)
+     * Returns the exact current beat float (e.g. 14.25) based on WebAudio Hardware Clock
      */
+    getCurrentBeat() {
+        if (!this.isPlaying || !this.synth.ctx) return 0;
+        const elapsedSeconds = this.synth.ctx.currentTime - this.startTime;
+        return (elapsedSeconds / this.secondsPerBeat) % this.totalLoopBeats;
+    }
+
     playTrack(trackData, bac = 0.0) {
         this.stop();
         if (!trackData || !trackData.ym2149_channels) return;
@@ -33,61 +39,57 @@ export default class MusicPlayer {
         this.isPlaying = true;
         this.isLooping = Boolean(trackData.loop);
 
-        const bpm = trackData.tempo_bpm || 120;
-        const secondsPerBeat = 60 / bpm;
-        const drunkenness = Math.min(bac / 3.0, 1.0); // Cap at 3.0‰
+        const bpm = trackData.tempo_bpm || 140;
+        this.secondsPerBeat = 60 / bpm;
+        this.totalLoopBeats = trackData.total_beats || 32;
+        
+        const drunkenness = Math.min(bac / 3.0, 1.0);
         const channels = trackData.ym2149_channels;
+        
+        this.startTime = this.synth.ctx.currentTime + 0.1;
 
         const playCycle = () => {
             if (!this.isPlaying) return;
-
             const now = this.synth.ctx.currentTime;
-            let maxTrackDuration = 0;
+            
+            // Re-sync start time on loop wrapper to prevent drift
+            this.startTime = now + 0.05;
+            let cycleDurationSeconds = this.totalLoopBeats * this.secondsPerBeat;
 
-            // Schedule all 3 YM2149 Hardware Channels in parallel
-            Object.keys(channels).forEach((channelName, channelIndex) => {
-                const track = channels[channelName];
+            Object.keys(channels).forEach((channelName) => {
+                const channel = channels[channelName];
+                const track = channel.track;
+                const defaultInst = channel.instrument || 'lead';
+                const channelVol = channel.volume || 0.2;
+                
                 let timeOffset = 0.05;
 
                 track.forEach((item, noteIndex) => {
-                    // 1. SPEED BENDING (Stolperndes Tempo bei Promille)
-                    let baseDuration = item.duration * secondsPerBeat;
+                    let baseDuration = item.duration * this.secondsPerBeat;
                     let tempoStretch = 1.0 + (drunkenness * 0.7);
                     let jitter = drunkenness * 0.12 * Math.sin(noteIndex * 1.7);
-                    let duration = Math.max(0.08, (baseDuration * tempoStretch) + jitter);
+                    let actualDuration = Math.max(0.08, (baseDuration * tempoStretch) + jitter);
 
                     const noteTime = now + timeOffset;
                     const baseFreq = this.synth.noteToFreq(item.note);
+                    const inst = item.inst || defaultInst;
 
                     if (baseFreq > 0) {
-                        // 2. PITCH BENDING (Lallende Frequenzschwankung)
                         let detuneHz = 0;
                         if (drunkenness > 0.1) {
                             const maxDetune = baseFreq * 0.10 * drunkenness;
                             detuneHz = maxDetune * Math.sin(noteIndex * 2.5);
                         }
-
-                        // Channel Volumes: Lead (A) = 0.25, Harmony/Bass (B/C) = 0.15
-                        const volume = channelIndex === 0 ? 0.25 : 0.15;
-                        this.synth.playTone(baseFreq, noteTime, duration, volume, detuneHz);
+                        this.synth.playTone(baseFreq, noteTime, actualDuration, channelVol, detuneHz, inst);
                     }
-
-                    timeOffset += duration;
+                    timeOffset += actualDuration;
                 });
-
-                if (timeOffset > maxTrackDuration) {
-                    maxTrackDuration = timeOffset;
-                }
             });
 
-            // Loop logic
             if (this.isLooping) {
                 const loopTimeout = setTimeout(() => {
-                    if (this.isPlaying && this.isLooping) {
-                        playCycle();
-                    }
-                }, maxTrackDuration * 1000);
-
+                    if (this.isPlaying && this.isLooping) playCycle();
+                }, (cycleDurationSeconds * 1000) - 50); // Fire slightly early to queue seamlessly
                 this.activeTimeouts.push(loopTimeout);
             }
         };

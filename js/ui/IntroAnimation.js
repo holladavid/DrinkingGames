@@ -170,33 +170,35 @@ export default class IntroAnimation {
     /**
      * Renders synchronized 8-bit Karaoke Lyrics Overlay
      */
+    /**
+     * Renders mathematically synchronized 8-bit Karaoke Lyrics Overlay
+     */
     renderKaraokeBox(ctx) {
         if (!this.activeMusicAsset || !this.activeMusicAsset.lyrics) return;
 
-        // Loop time offset (24 seconds loop length for Drunken Sailor)
-        const loopTime = this.timer % 24.0;
+        // FETCH EXACT BEAT FROM HARDWARE CLOCK! (100% Sync)
+        const currentBeat = this.musicPlayer ? this.musicPlayer.getCurrentBeat() : 0;
+        
         const currentLyric = this.activeMusicAsset.lyrics.find(
-            l => loopTime >= l.start && loopTime < l.end
+            l => currentBeat >= l.startBeat && currentBeat < l.endBeat
         );
 
         if (currentLyric) {
-            // Karaoke Banner Box
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.82)';
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
             ctx.fillRect(10, 145, 300, 32);
             ctx.strokeStyle = this.renderer.atari9BitToRgb([7, 5, 0]); // Gold Frame
             ctx.strokeRect(10, 145, 300, 32);
 
-            // Karaoke Title Header
             ctx.fillStyle = this.renderer.atari9BitToRgb([7, 5, 0]);
             ctx.font = "7px monospace";
-            ctx.fillText("🎤 PUB SING-ALONG KARAOKE:", 15, 154);
+            // Make the karaoke header pulse to the beat!
+            const beatPulse = (currentBeat % 1.0 < 0.2) ? ">>>" : "🎤 ";
+            ctx.fillText(`${beatPulse} PUB SING-ALONG KARAOKE:`, 15, 154);
 
-            // Active Karaoke Line 1
             ctx.fillStyle = '#ffffff';
             ctx.font = "bold 8px monospace";
             ctx.fillText(currentLyric.line1, 15, 165);
 
-            // Active Karaoke Line 2 (Glowing Green)
             ctx.fillStyle = '#00ff00';
             ctx.fillText(currentLyric.line2, 15, 173);
         }
