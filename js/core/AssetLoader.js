@@ -106,7 +106,42 @@ export default class AssetLoader {
             ctx.fillRect(0, 150, 320, 50);
             ctx.fillStyle = '#ffffff';
             ctx.fillRect(0, 150, 320, 2); // White lane line
-        } else {
+        }
+        else if (key === 'bavarian_athlete') {
+            // Generates an 18-Frame 32x48 Grid Spritesheet (6 cols x 4 rows = 192x192px)
+            c.width = 192;
+            c.height = 192;
+
+            for (let row = 0; row < 4; row++) {
+                const cols = row === 0 ? 6 : 4;
+                for (let col = 0; col < cols; col++) {
+                    const x = col * 32;
+                    const y = row * 48;
+
+                    // Body
+                    ctx.fillStyle = row === 3 ? '#ffcc00' : '#ffffff';
+                    ctx.fillRect(x + 10, y + 14, 12, 18);
+
+                    // Lederhosen / Trachten Shorts
+                    ctx.fillStyle = '#442200';
+                    ctx.fillRect(x + 10, y + 26, 12, 8);
+
+                    // Head
+                    ctx.fillStyle = '#ffcc99';
+                    ctx.fillRect(x + 12, y + 4, 8, 8);
+
+                    // Mallet / Beer Mug
+                    if (row === 2) {
+                        ctx.fillStyle = '#884400'; // Hammer swing
+                        ctx.fillRect(x + 22, y + 18, 8, 12);
+                    } else if (row === 3) {
+                        ctx.fillStyle = '#ffcc00'; // Raising Beer
+                        ctx.fillRect(x + 18, y + 2, 8, 10);
+                    }
+                }
+            }
+        } 
+        else {
             // Standard Grid Texture
             ctx.fillStyle = '#222222';
             ctx.fillRect(0, 0, 320, 200);

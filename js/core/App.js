@@ -92,12 +92,12 @@ class App {
     }
 
     async init() {
-        // 1. Load Graphic Assets
+// 1. Load Graphic Assets Manifest
         await this.assetLoader.loadManifest({
             'stadium_bg': 'assets/gfx/background/stadium_intro.png',
             'podium_bg': 'assets/gfx/background/podium_scene.png',
             'judges_sheet': 'assets/gfx/judges/judges_sheet.png',
-            'runner_sheet': 'assets/gfx/sprites/runner_sheet.png'
+            'bavarian_athlete': 'assets/gfx/sprites/bavarian_athlete_spritesheet.png'
         });
 
         // 2. Load Sponsors & Music Assets
